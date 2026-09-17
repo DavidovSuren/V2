@@ -5,7 +5,7 @@ meta:
     version: 20
 
 build:
-  additionalCommands: build
+  additionalCommands: cd backend && npm install && node scripts/generate-tasks.js
 
 run:
   scriptName: backend/server.js
