@@ -1,0 +1,13 @@
+meta:
+  environment: node
+  toolchain:
+    name: npm
+    version: 20
+
+build:
+  additionalCommands: cd backend && npm install && node scripts/generate-tasks.js
+
+run:
+  scriptName: backend/server.js
+  containerPort: 3000
+  persistenceMount: /data

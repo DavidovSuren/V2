@@ -1,0 +1,6 @@
+{
+  "name": "version20",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Repo root placeholder — реальное приложение находится в backend/ (см. amvera.yaml: build.additionalCommands ставит зависимости именно там)."
+}

@@ -71,8 +71,8 @@ node server.js
 
 Telegram требует HTTPS-адрес для Mini App. Варианты:
 
-- **Прод**: задеплой backend (Railway, Render, VPS + PM2/systemd) — получишь
-  постоянный HTTPS-адрес.
+- **Прод**: задеплой backend (Amvera, Railway, Render, VPS + PM2/systemd) —
+  получишь постоянный HTTPS-адрес.
 - **Быстрый тест**: HTTPS-туннель к локальному backend, например
   `ssh -R 80:localhost:3000 serveo.net` (адрес меняется при каждом перезапуске —
   `backend/scripts/tunnel-supervisor.js` поднимает туннель и сам обновляет
@@ -80,6 +80,30 @@ Telegram требует HTTPS-адрес для Mini App. Варианты:
 
 Дальше в [@BotFather](https://t.me/BotFather) или напрямую через Bot API
 (`setChatMenuButton`) укажи этот HTTPS-адрес как Web App для кнопки меню бота.
+
+### 3. Деплой на Amvera
+
+В корне репозитория уже лежит `amvera.yaml` (окружение Node.js, ставит
+зависимости из `backend/`, генерирует банк заданий при сборке, запускает
+`backend/server.js`, подключает постоянный диск `/data` — чтобы SQLite не
+терялся при передеплое).
+
+**Секреты и переменные окружения задаются только через панель Amvera**
+(раздел «Переменные и секреты» → «Добавить переменные или секрет»),
+**`.env` в репозиторий не коммитится** (репозиторий публичный — реальный
+`BOT_TOKEN` в нём сразу же смогут увидеть и угнать бота). Нужно задать:
+
+| Переменная | Значение |
+|---|---|
+| `BOT_TOKEN` | токен от @BotFather (как **секрет**) |
+| `ADMIN_TG_ID` | твой Telegram user id (узнать у @userinfobot) |
+| `DB_PATH` | `/data/version20.sqlite` — обязательно на постоянном диске |
+| `DEV_ALLOW_FAKE_AUTH` | `false` — в проде debug-заголовки должны быть выключены |
+| `PORT` | `3000` (совпадает с `containerPort` в `amvera.yaml`) |
+
+После деплоя останется применить переменные (Amvera перезапустит контейнер)
+и один раз выставить HTTPS-адрес Amvera как Web App в `setChatMenuButton`
+бота — как описано в пункте 2 выше.
 
 ### 3. Если frontend хостится отдельно от backend
 
