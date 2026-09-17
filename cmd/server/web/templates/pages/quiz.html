@@ -1,0 +1,39 @@
+{{define "content"}}
+<div class="flex justify-between items-center mb-8">
+  <span>Вопрос {{add .Index 1}} из {{.Total}}</span>
+  <span>{{add .Index 1}} / {{.Total}}</span>
+</div>
+<div class="progress-bar mb-8">
+  <div class="progress-fill" style="width: {{.PctWidth}}%"></div>
+</div>
+
+<div class="card">
+  {{if .Question.Category}}<div style="font-size:12px;color:var(--tg-hint-color);margin-bottom:6px">{{.Question.Category}}</div>{{end}}
+  <h2>{{.Question.Text}}</h2>
+
+  <form method="POST" action="/quiz/{{.Index}}" id="quiz-form">
+    {{if eq .Question.Type "single"}}
+      <div class="options">
+        {{range .Question.Options}}
+        <label class="option"><input type="radio" name="answer" value="{{.Value}}" {{if eq .Value $.Answer}}checked{{end}} required> {{.Label}}</label>
+        {{end}}
+      </div>
+    {{else if eq .Question.Type "scale"}}
+      <div class="options options-row">
+        {{range $n := seq 1 10}}
+        <label class="option"><input type="radio" name="answer" value="{{$n}}" {{if eq (printf "%d" $n) $.Answer}}checked{{end}} required>{{$n}}</label>
+        {{end}}
+      </div>
+    {{else}}
+      <div class="input-group">
+        <input type="text" name="answer" value="{{.Answer}}" placeholder="Твой ответ..." required>
+      </div>
+    {{end}}
+
+    <div class="flex gap-8 mt-16">
+      {{if not .IsFirst}}<a class="btn btn-secondary" style="flex:1" href="/quiz/{{add .Index -1}}">Назад</a>{{end}}
+      <button class="btn btn-primary" style="flex:2" type="submit">{{if .IsLast}}Готово{{else}}Далее{{end}}</button>
+    </div>
+  </form>
+</div>
+{{end}}

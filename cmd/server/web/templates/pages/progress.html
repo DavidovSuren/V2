@@ -1,0 +1,21 @@
+{{define "content"}}
+<h1>Прогресс</h1>
+<div class="card">
+  {{range .Categories}}
+  <div class="category-item">
+    <div class="category-name">{{.Name}}</div>
+    <div class="category-bar">
+      <div class="progress-bar"><div class="progress-fill" style="width:{{.Pct}}%"></div></div>
+    </div>
+    <div class="category-pct">{{.Pct}}%</div>
+  </div>
+  {{end}}
+</div>
+<div class="card">
+  <div class="flex justify-between mb-8"><span>Уровень</span><strong>{{.Level}}</strong></div>
+  <div class="flex justify-between mb-8"><span>XP</span><strong>{{.XP}}</strong></div>
+  <div class="flex justify-between mb-8"><span>Выполнено заданий</span><strong>{{.CompletedCount}} / {{.TotalTasks}}</strong></div>
+  <div class="flex justify-between"><span>Текущий STREAK</span><strong>{{.StreakCurrent}} дней{{if gt .StreakCurrent 0}} 🔥{{end}}</strong></div>
+</div>
+{{template "nav" "progress"}}
+{{end}}

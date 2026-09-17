@@ -1,0 +1,11 @@
+{{define "content"}}
+<h1>Недельный отчёт</h1>
+<div class="card">
+  <div class="flex justify-between mb-8"><span>Выполнено заданий</span><strong>{{.Completed}} / 7</strong></div>
+  <div class="flex justify-between mb-8"><span>Активных дней</span><strong>{{.ActiveDays}}</strong></div>
+  <div class="flex justify-between mb-8"><span>STREAK</span><strong>{{.StreakCurrent}} дней</strong></div>
+  <div class="flex justify-between mb-8"><span>Главный результат</span><strong>{{if .TopCategory}}{{.TopCategory}}{{else}}—{{end}}</strong></div>
+  <div class="flex justify-between"><span>Фокус следующей недели</span><strong>{{if .FocusNextWeek}}{{.FocusNextWeek}}{{else}}—{{end}}</strong></div>
+</div>
+<a class="btn btn-secondary" href="/profile">Назад</a>
+{{end}}

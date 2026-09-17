@@ -1,0 +1,51 @@
+{{define "content"}}
+<div class="text-center mb-8">
+  <div style="width:80px;height:80px;border-radius:50%;background:var(--tg-secondary-bg-color);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:36px">
+    {{if eq .Gender "female"}}👩{{else if eq .Gender "male"}}🧑{{else}}👤{{end}}
+  </div>
+  <h1 style="margin:0">{{.Name}}</h1>
+  <div class="subtitle">{{.AgeGroup}}</div>
+</div>
+
+<div class="card">
+  <div class="flex justify-between items-center mb-8">
+    <div style="font-weight:600">Подписка</div>
+    <div class="subtitle" style="margin:0">{{.SubscriptionLabel}}</div>
+  </div>
+  {{range .Tiers}}
+  <div class="tier-card{{if eq .Tier "premium888"}} tier-premium{{end}}">
+    <div style="font-weight:600">{{if eq .Tier "plus369"}}Version 2.0 Plus{{else}}Version 2.0 Premium 💎{{end}}</div>
+    <div class="tier-desc">{{if eq .Tier "premium888"}}+ «Сообщество»: видно уровень и значки всех участников, раздел «Контакты»{{else}}Полный доступ к игре и заданиям{{end}}</div>
+    <div class="tier-price">
+      {{if gt .DiscountPct 0}}<span class="old-price">{{.BasePrice}} ₽</span>{{.PricePaid}} ₽/мес <span style="font-size:12px;color:var(--tg-button-color)">(-{{.DiscountPct}}%)</span>{{else}}{{.PricePaid}} ₽/мес{{end}}
+    </div>
+    <form method="POST" action="/subscribe">
+      <input type="hidden" name="tier" value="{{.Tier}}">
+      <button class="btn btn-primary mt-8" type="submit">Оформить</button>
+    </form>
+  </div>
+  {{end}}
+</div>
+
+<div class="card">
+  <div style="font-weight:600;margin-bottom:8px">Пригласи друга</div>
+  <div class="subtitle" style="margin-bottom:8px">Чем больше друзей оплатили подписку по твоей ссылке — тем больше скидка у следующих приглашённых (до 50%).</div>
+  <div class="ref-code-box"><span>{{.ReferralCode}}</span></div>
+</div>
+
+<div class="card">
+  <div class="flex justify-between mb-8"><span>Общий прогресс</span><strong>{{printf "%.0f" .ProgressPct}}%</strong></div>
+  <div class="flex justify-between mb-8"><span>Уровень</span><strong>{{.Level}}</strong></div>
+  <div class="flex justify-between mb-8"><span>XP</span><strong>{{.XP}}</strong></div>
+  <div class="flex justify-between"><span>STREAK</span><strong>{{.StreakCurrent}}</strong></div>
+</div>
+
+{{if .HasPremiumAgent}}<a class="btn btn-secondary mt-16" href="/wallet">💼 Кошелёк агента</a>{{end}}
+<a class="btn btn-secondary mt-8" href="/reports/weekly">Недельный отчёт</a>
+<form method="POST" action="/logout" class="mt-8">
+  <button class="btn btn-text" type="submit" style="color:var(--tg-destructive-text-color)">Выйти</button>
+</form>
+<div class="text-center mt-16" style="font-size:12px;color:var(--tg-hint-color)">Version 2.0 · 3.0.0 (Go)</div>
+
+{{template "nav" "profile"}}
+{{end}}

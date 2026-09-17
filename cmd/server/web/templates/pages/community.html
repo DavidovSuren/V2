@@ -1,0 +1,39 @@
+{{define "content"}}
+<h1>Сообщество</h1>
+<div class="segmented">
+  <a href="/community" class="{{if ne .Tab "friends"}}active{{end}}">Все участники</a>
+  <a href="/community?tab=friends" class="{{if eq .Tab "friends"}}active{{end}}">Контакты</a>
+</div>
+
+{{if .Upsell}}<div class="upsell-banner">{{.Upsell}}</div>{{end}}
+
+{{if eq .Tab "friends"}}
+{{if .PremiumView}}
+<form method="POST" action="/friends/add" class="add-friend-row">
+  <input type="text" name="username" placeholder="@username друга">
+  <button class="btn btn-primary" type="submit">Добавить</button>
+</form>
+{{end}}
+{{end}}
+
+<div class="card">
+  {{if .People}}
+    {{range .People}}
+    <div class="list-item">
+      <div class="list-avatar">
+        {{if eq .Gender.String "female"}}👩{{else if eq .Gender.String "male"}}🧑{{else}}👤{{end}}
+        {{if .Diamond}}<span class="diamond-badge">💎</span>{{end}}
+      </div>
+      <div style="flex:1">
+        <div class="list-name">{{.Name}}</div>
+      </div>
+      {{if $.PremiumView}}<div class="list-level">Ур. {{.Level}}</div>{{end}}
+    </div>
+    {{end}}
+  {{else}}
+    <div class="subtitle" style="margin:0">Пока никого нет</div>
+  {{end}}
+</div>
+
+{{template "nav" "community"}}
+{{end}}

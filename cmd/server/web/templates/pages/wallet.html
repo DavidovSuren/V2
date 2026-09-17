@@ -1,0 +1,29 @@
+{{define "content"}}
+<div class="flex items-center gap-8 mb-8">
+  <a href="/profile" style="font-size:22px;text-decoration:none">←</a>
+  <h1 style="margin:0">Кошелёк агента</h1>
+</div>
+<div class="card text-center">
+  <div class="subtitle" style="margin-bottom:4px">Баланс</div>
+  <div style="font-size:32px;font-weight:700">{{.Balance}} ₽</div>
+</div>
+<div class="card">
+  <div class="flex justify-between"><span>Оплативших по твоему коду</span><strong>{{.PayingReferrals}}</strong></div>
+</div>
+<div class="card">
+  <h2 style="font-size:15px;margin-bottom:8px">История начислений</h2>
+  {{if .History}}
+    {{range .History}}
+    <div class="flex justify-between mb-8">
+      <span class="subtitle" style="margin:0">{{.CreatedAt}} · {{.Note}}</span>
+      <strong>+{{.Amount}} ₽</strong>
+    </div>
+    {{end}}
+  {{else}}
+    <div class="subtitle" style="margin:0">Пока пусто</div>
+  {{end}}
+</div>
+<form method="POST" action="/wallet/withdraw">
+  <button class="btn btn-secondary" type="submit">Вывести средства</button>
+</form>
+{{end}}

@@ -1,0 +1,14 @@
+{{define "content"}}
+<h1>Достижения</h1>
+<p class="subtitle">С подпиской 888 ₽/мес эти значки видят другие участники в «Сообществе»</p>
+<div class="achievements-grid">
+  {{range .}}
+  <div class="achievement{{if .Unlocked}} unlocked{{end}}">
+    <div class="icon">{{.Icon}}</div>
+    <div class="name">{{.Name}}</div>
+    <div class="desc">{{.Desc}}</div>
+  </div>
+  {{end}}
+</div>
+{{template "nav" "achievements"}}
+{{end}}

@@ -1,12 +1,8 @@
 meta:
-  environment: node
-  toolchain:
-    name: npm
-    version: 20
+  environment: docker
 
 build:
-  additionalCommands: cd backend && npm install && node scripts/generate-tasks.js
+  dockerfile: Dockerfile
 
 run:
-  scriptName: backend/server.js
   containerPort: 3000
