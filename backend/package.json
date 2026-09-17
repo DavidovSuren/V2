@@ -1,0 +1,19 @@
+{
+  "name": "version20-backend",
+  "version": "1.0.0",
+  "description": "Backend for the Version 2.0 Telegram Mini App",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "generate-tasks": "node scripts/generate-tasks.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "node-cron": "^3.0.3"
+  }
+}
