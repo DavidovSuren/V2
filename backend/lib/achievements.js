@@ -1,31 +1,26 @@
 const db = require('../db');
 const { STREAK_MILESTONES, LEVEL_MILESTONES } = require('./leveling');
 
-const insertIfNew = db.prepare(`
-  INSERT OR IGNORE INTO achievements (user_id, code, unlocked_at) VALUES (?, ?, ?)
-`);
-const hasCode = db.prepare('SELECT 1 FROM achievements WHERE user_id = ? AND code = ?');
-
 // Проверяет стрик и уровень пользователя и открывает новые бейджи.
 // Возвращает список кодов, которые были открыты именно сейчас (для тостов).
-function checkAndUnlock(user) {
+async function checkAndUnlock(user) {
   const unlockedNow = [];
   const now = new Date().toISOString();
 
-  for (const days of STREAK_MILESTONES) {
-    const code = `${days}d`;
-    if (user.streak_current >= days && !hasCode.get(user.id, code)) {
-      insertIfNew.run(user.id, code, now);
-      unlockedNow.push(code);
-    }
-  }
+  const milestones = [
+    ...STREAK_MILESTONES.map(days => ({ code: `${days}d`, reached: user.streak_current >= days })),
+    ...LEVEL_MILESTONES.map(lvl => ({ code: `lvl${lvl}`, reached: user.level >= lvl }))
+  ];
 
-  for (const lvl of LEVEL_MILESTONES) {
-    const code = `lvl${lvl}`;
-    if (user.level >= lvl && !hasCode.get(user.id, code)) {
-      insertIfNew.run(user.id, code, now);
-      unlockedNow.push(code);
-    }
+  for (const { code, reached } of milestones) {
+    if (!reached) continue;
+    const has = await db.get('SELECT 1 FROM achievements WHERE user_id = ? AND code = ?', [user.id, code]);
+    if (has) continue;
+    await db.run(
+      'INSERT INTO achievements (user_id, code, unlocked_at) VALUES (?, ?, ?) ON CONFLICT (user_id, code) DO NOTHING',
+      [user.id, code, now]
+    );
+    unlockedNow.push(code);
   }
 
   return unlockedNow;

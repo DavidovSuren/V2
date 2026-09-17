@@ -28,9 +28,9 @@ v2/
 │   ├── index.html         # разметка + стили (тема Telegram)
 │   ├── api.js              # fetch-клиент к backend
 │   └── app.js               # весь клиентский JS
-└── backend/              # Node.js + Express + SQLite
+└── backend/              # Node.js + Express + PostgreSQL
     ├── server.js            # Express app (отдаёт и API, и frontend/)
-    ├── db.js                 # схема SQLite (better-sqlite3)
+    ├── db.js                 # пул pg + схема (создаётся при старте)
     ├── routes/                # onboarding, tasks, diary, progress,
     │                           # community, subscriptions, admin, reports
     ├── lib/                    # scheduler, leveling, referrals, telegram...
@@ -40,7 +40,7 @@ v2/
         └── generate-tasks.js      # генератор банка заданий
 ```
 
-Backend хранит данные по-настоящему (SQLite): пользователей, прогресс, рефералы,
+Backend хранит данные по-настоящему (PostgreSQL): пользователей, прогресс, рефералы,
 кошелёк, платежи. Frontend обращается к нему через `fetch` с заголовком
 `Authorization: tma <initData>` (реальная Telegram-аутентификация с проверкой
 подписи) либо через `X-Debug-*` заголовки в режиме разработки вне Telegram.
@@ -49,6 +49,13 @@ Backend хранит данные по-настоящему (SQLite): польз
 
 ## Как запустить
 
+### 0. PostgreSQL
+
+Нужен доступный инстанс Postgres (локально — например, через Docker:
+`docker run -d -e POSTGRES_DB=v2 -e POSTGRES_USER=v2 -e POSTGRES_PASSWORD=changeme -p 5432:5432 postgres:17`).
+Схема (таблицы, индексы) создаётся автоматически при первом запуске сервера —
+ничего накатывать вручную не нужно.
+
 ### 1. Backend
 
 ```bash
@@ -56,6 +63,8 @@ cd backend
 npm install
 cp .env.example .env
 # впиши в .env:
+#   DATABASE_URL  — строка подключения к Postgres, например
+#                   postgres://v2:changeme@localhost:5432/v2
 #   BOT_TOKEN     — токен от @BotFather
 #   ADMIN_TG_ID   — твой Telegram user id (узнать у @userinfobot) —
 #                   только этот аккаунт может выдавать премиум-агентские коды
@@ -85,19 +94,20 @@ Telegram требует HTTPS-адрес для Mini App. Варианты:
 
 В корне репозитория уже лежит `amvera.yaml` (окружение Node.js, ставит
 зависимости из `backend/`, генерирует банк заданий при сборке, запускает
-`backend/server.js`, подключает постоянный диск `/data` — чтобы SQLite не
-терялся при передеплое).
+`backend/server.js`). База данных — отдельный сервис PostgreSQL в Amvera
+(«Базы данных» → создать кластер), приложение подключается к нему по
+`DATABASE_URL`, схема создаётся автоматически при первом старте.
 
 **Секреты и переменные окружения задаются только через панель Amvera**
 (раздел «Переменные и секреты» → «Добавить переменные или секрет»),
-**`.env` в репозиторий не коммитится** (репозиторий публичный — реальный
-`BOT_TOKEN` в нём сразу же смогут увидеть и угнать бота). Нужно задать:
+**`.env` в репозиторий не коммитится** (репозиторий публичный — реальные
+`BOT_TOKEN` и пароль от БД в нём сразу же смогут увидеть и угнать). Нужно задать:
 
 | Переменная | Значение |
 |---|---|
+| `DATABASE_URL` | `postgres://<user>:<пароль>@<внутренний адрес БД>:5432/<база>` — внутренний адрес (вида `amvera-<аккаунт>-cnpg-v2-rw`) и пароль показывает сама Amvera после создания кластера БД |
 | `BOT_TOKEN` | токен от @BotFather (как **секрет**) |
 | `ADMIN_TG_ID` | твой Telegram user id (узнать у @userinfobot) |
-| `DB_PATH` | `/data/version20.sqlite` — обязательно на постоянном диске |
 | `DEV_ALLOW_FAKE_AUTH` | `false` — в проде debug-заголовки должны быть выключены |
 | `PORT` | `3000` (совпадает с `containerPort` в `amvera.yaml`) |
 
@@ -183,9 +193,8 @@ weighted round-robin (`backend/lib/scheduler.js`), так что слабые п
 
 - «Контакты» — это реферальная сеть + добавление по `@username`, а не импорт
   телефонной книги (Telegram Mini Apps не дают к ней доступа).
-- SQLite — файл на диске backend-сервера; для масштабирования на несколько
-  инстансов потребуется миграция на PostgreSQL (слой доступа к БД — один
-  файл `db.js`, замена не потребует переписывать роуты).
+- БД — PostgreSQL (`backend/db.js`), масштабируется горизонтально на несколько
+  инстансов backend без дополнительных изменений (в отличие от файловой SQLite).
 - Push-уведомления (15:15 МСК) и еженедельные/ежемесячные сообщения бота
   работают только при заданном `BOT_TOKEN` и постоянно запущенном сервере.
 

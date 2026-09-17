@@ -10,4 +10,3 @@ build:
 run:
   scriptName: backend/server.js
   containerPort: 3000
-  persistenceMount: /data

@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const db = require('../db');
+const { wrap } = require('./asyncHandler');
 
 // Проверка initData по алгоритму Telegram:
 // https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
@@ -64,17 +65,17 @@ function identify(req, res, next) {
 }
 
 // Требует, чтобы пользователь уже был зарегистрирован (прошёл онбординг).
-function requireUser(req, res, next) {
-  let row = db.prepare('SELECT * FROM users WHERE tg_id = ?').get(req.tg.id);
+async function requireUser(req, res, next) {
+  let row = await db.get('SELECT * FROM users WHERE tg_id = ?', [req.tg.id]);
   if (!row) return res.status(404).json({ error: 'Пользователь ещё не зарегистрирован' });
 
   if (req.tg.username && req.tg.username !== row.username) {
-    db.prepare('UPDATE users SET username = ? WHERE id = ?').run(req.tg.username, row.id);
-    row = db.prepare('SELECT * FROM users WHERE id = ?').get(row.id);
+    await db.run('UPDATE users SET username = ? WHERE id = ?', [req.tg.username, row.id]);
+    row = await db.get('SELECT * FROM users WHERE id = ?', [row.id]);
   }
 
   req.user = row;
   next();
 }
 
-module.exports = { verifyInitData, identify, requireUser };
+module.exports = { verifyInitData, identify, requireUser: wrap(requireUser) };

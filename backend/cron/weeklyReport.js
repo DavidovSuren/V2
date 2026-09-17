@@ -7,11 +7,11 @@ const { sendMessage } = require('../lib/telegram');
 // Каждый понедельник в 10:00 по московскому времени — отчёт за неделю + XP.
 function start() {
   cron.schedule('0 10 * * 1', async () => {
-    const users = db.prepare('SELECT id, tg_id FROM users WHERE gender IS NOT NULL').all();
+    const users = await db.all('SELECT id, tg_id FROM users WHERE gender IS NOT NULL');
 
     for (const user of users) {
-      const report = weeklyReportFor(user.id);
-      db.prepare('UPDATE users SET xp = xp + ? WHERE id = ?').run(WEEKLY_REPORT_XP, user.id);
+      const report = await weeklyReportFor(user.id);
+      await db.run('UPDATE users SET xp = xp + ? WHERE id = ?', [WEEKLY_REPORT_XP, user.id]);
 
       const text = `📊 Недельный отчёт\n\n` +
         `Выполнено заданий: ${report.completed} / 7\n` +

@@ -8,34 +8,34 @@ function dateNDaysAgo(n) {
   return d.toISOString().slice(0, 10);
 }
 
-function topWeightedRemainingCategory(userId) {
-  const row = db.prepare(`
+async function topWeightedRemainingCategory(userId) {
+  const row = await db.get(`
     SELECT cw.category FROM category_weights cw
     WHERE cw.user_id = ? AND EXISTS (
       SELECT 1 FROM user_schedule us
       WHERE us.user_id = cw.user_id AND us.category = cw.category AND us.status = 'pending'
     )
     ORDER BY cw.weight DESC LIMIT 1
-  `).get(userId);
+  `, [userId]);
   return row ? row.category : null;
 }
 
-function weeklyReportFor(userId) {
+async function weeklyReportFor(userId) {
   const from = dateNDaysAgo(6);
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+  const user = await db.get('SELECT * FROM users WHERE id = ?', [userId]);
 
-  const counts = db.prepare(`
-    SELECT action, COUNT(*) as n FROM action_log
+  const counts = await db.all(`
+    SELECT action, COUNT(*)::int as n FROM action_log
     WHERE user_id = ? AND action_date >= ? GROUP BY action
-  `).all(userId, from);
+  `, [userId, from]);
   const done = counts.find(c => c.action === 'done')?.n || 0;
   const skipped = counts.find(c => c.action === 'skip')?.n || 0;
 
-  const topCategoryRow = db.prepare(`
-    SELECT category, COUNT(*) as n FROM action_log
+  const topCategoryRow = await db.get(`
+    SELECT category, COUNT(*)::int as n FROM action_log
     WHERE user_id = ? AND action_date >= ? AND action = 'done'
     GROUP BY category ORDER BY n DESC LIMIT 1
-  `).get(userId, from);
+  `, [userId, from]);
 
   return {
     from, to: todayMoscow(),
@@ -44,32 +44,32 @@ function weeklyReportFor(userId) {
     activeDays: done + skipped,
     streakCurrent: user.streak_current,
     topCategory: topCategoryRow ? topCategoryRow.category : null,
-    focusNextWeek: topWeightedRemainingCategory(userId),
+    focusNextWeek: await topWeightedRemainingCategory(userId),
     xpAwarded: WEEKLY_REPORT_XP
   };
 }
 
-function monthlyReportFor(userId) {
+async function monthlyReportFor(userId) {
   const from = dateNDaysAgo(29);
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+  const user = await db.get('SELECT * FROM users WHERE id = ?', [userId]);
 
-  const counts = db.prepare(`
-    SELECT action, COUNT(*) as n FROM action_log
+  const counts = await db.all(`
+    SELECT action, COUNT(*)::int as n FROM action_log
     WHERE user_id = ? AND action_date >= ? GROUP BY action
-  `).all(userId, from);
+  `, [userId, from]);
   const done = counts.find(c => c.action === 'done')?.n || 0;
   const skipped = counts.find(c => c.action === 'skip')?.n || 0;
 
-  const categoryBreakdown = db.prepare(`
-    SELECT category, COUNT(*) as n FROM action_log
+  const categoryBreakdown = await db.all(`
+    SELECT category, COUNT(*)::int as n FROM action_log
     WHERE user_id = ? AND action_date >= ? AND action = 'done'
     GROUP BY category ORDER BY n DESC
-  `).all(userId, from);
+  `, [userId, from]);
 
-  const moodRows = db.prepare(`
+  const moodRows = await db.all(`
     SELECT entry_date, emoji FROM diary_entries
     WHERE user_id = ? AND entry_date >= ? ORDER BY entry_date ASC
-  `).all(userId, from);
+  `, [userId, from]);
 
   // Динамика настроения по неделям месяца — среднее значение эмодзи (1..5).
   const weeks = [[], [], [], [], []];

@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { identify, requireUser } = require('../lib/telegramAuth');
+const { wrap } = require('../lib/asyncHandler');
 const { todayMoscow } = require('../lib/dateUtil');
 
 const router = express.Router();
@@ -9,11 +10,11 @@ const router = express.Router();
 // Оно НЕ меняется само по себе: либо пользователь его выполняет (тогда
 // day_index сдвигается в POST /api/diary), либо пропускает (тогда
 // day_index остаётся тем же — то же задание будет "сегодняшним" и завтра).
-router.get('/today', identify, requireUser, (req, res) => {
+router.get('/today', identify, requireUser, wrap(async (req, res) => {
   const user = req.user;
 
   if (user.day_index >= 365) {
-    const lastRow = db.prepare('SELECT * FROM user_schedule WHERE user_id = ? AND day_index = 364').get(user.id);
+    const lastRow = await db.get('SELECT * FROM user_schedule WHERE user_id = ? AND day_index = 364', [user.id]);
     return res.json({
       dayIndex: 364,
       category: lastRow?.category || null,
@@ -25,8 +26,8 @@ router.get('/today', identify, requireUser, (req, res) => {
     });
   }
 
-  const row = db.prepare('SELECT * FROM user_schedule WHERE user_id = ? AND day_index = ?')
-    .get(user.id, user.day_index);
+  const row = await db.get('SELECT * FROM user_schedule WHERE user_id = ? AND day_index = ?',
+    [user.id, user.day_index]);
 
   if (!row) {
     return res.status(409).json({ error: 'Анкета ещё не пройдена', quizDone: false });
@@ -41,9 +42,9 @@ router.get('/today', identify, requireUser, (req, res) => {
     finished: false,
     canActToday: user.last_action_date !== todayMoscow()
   });
-});
+}));
 
-router.post('/today/skip', identify, requireUser, (req, res) => {
+router.post('/today/skip', identify, requireUser, wrap(async (req, res) => {
   const user = req.user;
   const today = todayMoscow();
 
@@ -54,20 +55,18 @@ router.post('/today/skip', identify, requireUser, (req, res) => {
     return res.status(409).json({ error: 'Сегодня действие уже отмечено — заходи завтра' });
   }
 
-  const row = db.prepare('SELECT category FROM user_schedule WHERE user_id = ? AND day_index = ?')
-    .get(user.id, user.day_index);
+  const row = await db.get('SELECT category FROM user_schedule WHERE user_id = ? AND day_index = ?',
+    [user.id, user.day_index]);
 
-  const tx = db.transaction(() => {
-    db.prepare('UPDATE users SET last_action_date = ?, streak_current = 0 WHERE id = ?')
-      .run(today, user.id);
-    db.prepare(`
+  await db.transaction(async (t) => {
+    await t.run('UPDATE users SET last_action_date = ?, streak_current = 0 WHERE id = ?', [today, user.id]);
+    await t.run(`
       INSERT INTO action_log (user_id, action_date, action, category) VALUES (?, ?, 'skip', ?)
-      ON CONFLICT(user_id, action_date) DO NOTHING
-    `).run(user.id, today, row ? row.category : null);
+      ON CONFLICT (user_id, action_date) DO NOTHING
+    `, [user.id, today, row ? row.category : null]);
   });
-  tx();
 
   res.json({ ok: true, streakCurrent: 0 });
-});
+}));
 
 module.exports = router;

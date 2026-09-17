@@ -8,11 +8,11 @@ const { sendMessage } = require('../lib/telegram');
 // с динамикой настроения + бонус XP.
 function start() {
   cron.schedule('0 11 1 * *', async () => {
-    const users = db.prepare('SELECT id, tg_id FROM users WHERE gender IS NOT NULL').all();
+    const users = await db.all('SELECT id, tg_id FROM users WHERE gender IS NOT NULL');
 
     for (const user of users) {
-      const report = monthlyReportFor(user.id);
-      db.prepare('UPDATE users SET xp = xp + ? WHERE id = ?').run(MONTHLY_REPORT_XP, user.id);
+      const report = await monthlyReportFor(user.id);
+      await db.run('UPDATE users SET xp = xp + ? WHERE id = ?', [MONTHLY_REPORT_XP, user.id]);
 
       const moodLine = report.moodTrend.length
         ? report.moodTrend.map(m => `нед.${m.week}: ${m.avgMood}/5`).join('  ')

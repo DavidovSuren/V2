@@ -4,7 +4,7 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 
-require('./db'); // инициализирует схему при первом импорте
+const db = require('./db');
 
 const onboardingRoutes = require('./routes/onboarding');
 const taskRoutes = require('./routes/tasks');
@@ -43,19 +43,26 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Version 2.0 backend слушает порт ${PORT}`);
-    if (!process.env.BOT_TOKEN) {
-      console.warn('[server] BOT_TOKEN не задан — уведомления и сообщения бота отключены.');
-    }
-    if (!process.env.ADMIN_TG_ID) {
-      console.warn('[server] ADMIN_TG_ID не задан — выдача премиум-агентских кодов недоступна.');
-    }
+  db.migrate()
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`Version 2.0 backend слушает порт ${PORT}`);
+        if (!process.env.BOT_TOKEN) {
+          console.warn('[server] BOT_TOKEN не задан — уведомления и сообщения бота отключены.');
+        }
+        if (!process.env.ADMIN_TG_ID) {
+          console.warn('[server] ADMIN_TG_ID не задан — выдача премиум-агентских кодов недоступна.');
+        }
 
-    require('./cron/dailyReminder').start();
-    require('./cron/weeklyReport').start();
-    require('./cron/monthlyReport').start();
-  });
+        require('./cron/dailyReminder').start();
+        require('./cron/weeklyReport').start();
+        require('./cron/monthlyReport').start();
+      });
+    })
+    .catch((err) => {
+      console.error('[server] не удалось применить схему БД при старте:', err);
+      process.exit(1);
+    });
 }
 
 module.exports = app;

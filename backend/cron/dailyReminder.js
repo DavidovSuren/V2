@@ -8,15 +8,15 @@ const { sendMessage } = require('../lib/telegram');
 function start() {
   cron.schedule('15 15 * * *', async () => {
     const today = todayMoscow();
-    const users = db.prepare(`
+    const users = await db.all(`
       SELECT id, tg_id, day_index FROM users
       WHERE gender IS NOT NULL AND day_index < 365
         AND (last_action_date IS NULL OR last_action_date != ?)
-    `).all(today);
+    `, [today]);
 
     for (const user of users) {
-      const row = db.prepare('SELECT task_text FROM user_schedule WHERE user_id = ? AND day_index = ?')
-        .get(user.id, user.day_index);
+      const row = await db.get('SELECT task_text FROM user_schedule WHERE user_id = ? AND day_index = ?',
+        [user.id, user.day_index]);
       if (!row) continue;
       await sendMessage(user.tg_id, `⏰ Напоминание Version 2.0\n\nСегодняшнее действие:\n${row.task_text}\n\nОткрой приложение и отметь, выполнил(а) ли ты его.`);
     }
