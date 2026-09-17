@@ -1,6 +1,10 @@
-require('dotenv').config();
-
 const path = require('path');
+
+// __dirname, а не cwd — иначе при запуске 'node backend/server.js' из
+// корня репозитория (так делает Amvera через 'npm start') dotenv ищет
+// .env не в backend/, а в корне, и ничего не находит.
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+
 const express = require('express');
 const cors = require('cors');
 

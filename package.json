@@ -2,5 +2,9 @@
   "name": "version20",
   "private": true,
   "version": "1.0.0",
-  "description": "Repo root placeholder — реальное приложение находится в backend/ (см. amvera.yaml: build.additionalCommands ставит зависимости именно там)."
+  "description": "Repo root — реальное приложение в backend/. Amvera выполняет 'npm install && npm run build' в корне, поэтому build ставит зависимости backend и генерирует банк заданий.",
+  "scripts": {
+    "build": "cd backend && npm install && node scripts/generate-tasks.js",
+    "start": "node backend/server.js"
+  }
 }
