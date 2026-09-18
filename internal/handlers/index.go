@@ -3,8 +3,9 @@ package handlers
 import "net/http"
 
 type WelcomeData struct {
-	RefCode string
-	Error   string
+	RefCode       string
+	Error         string
+	NeedBootstrap bool
 }
 
 // handleIndex — "/" ветвится по состоянию пользователя: нет сессии →
@@ -14,7 +15,8 @@ type WelcomeData struct {
 func (a *App) handleIndex(w http.ResponseWriter, r *http.Request) {
 	tgID, ok := a.Sessions.TgIDFromRequest(r)
 	if !ok {
-		a.render(w, "welcome.html", WelcomeData{RefCode: refCodeFromCookie(r)})
+		// Сессии ещё нет — только тут bootstrap.js должен слать initData.
+		a.render(w, "welcome.html", WelcomeData{RefCode: refCodeFromCookie(r), NeedBootstrap: true})
 		return
 	}
 
