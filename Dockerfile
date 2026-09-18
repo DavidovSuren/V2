@@ -6,7 +6,8 @@ COPY cmd ./cmd
 COPY internal ./internal
 RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/server
 
-FROM gcr.io/distroless/static-debian12
+FROM alpine:3.20
+RUN apk add --no-cache ca-certificates
 COPY --from=build /server /server
 EXPOSE 3000
 ENTRYPOINT ["/server"]
