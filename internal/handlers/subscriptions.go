@@ -29,6 +29,7 @@ type ProfileData struct {
 	ReferralCode      string
 	HasPremiumAgent   bool
 	Tiers             []TierQuote
+	PromoError        string
 }
 
 func (a *App) tierQuotes(user *models.User) []TierQuote {
@@ -69,6 +70,7 @@ func (a *App) handleProfile(w http.ResponseWriter, r *http.Request) {
 		StreakCurrent: user.StreakCurrent, ReferralCode: user.ReferralCode.String,
 		HasPremiumAgent: user.HasPremiumAgentCode(),
 		Tiers:           a.tierQuotes(user),
+		PromoError:      r.URL.Query().Get("promo_err"),
 	})
 }
 

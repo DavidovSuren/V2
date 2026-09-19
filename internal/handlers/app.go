@@ -92,6 +92,7 @@ func (a *App) Routes() http.Handler {
 
 	mux.HandleFunc("GET /profile", a.requireOnboarded(a.handleProfile))
 	mux.HandleFunc("POST /subscribe", a.requireOnboarded(a.handleSubscribe))
+	mux.HandleFunc("POST /promo", a.requireOnboarded(a.handlePromoRedeem))
 	mux.HandleFunc("POST /logout", a.requireOnboarded(a.handleLogout))
 
 	mux.HandleFunc("GET /reports/weekly", a.requireOnboarded(a.handleWeeklyReport))

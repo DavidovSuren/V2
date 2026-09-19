@@ -137,6 +137,16 @@ CREATE TABLE IF NOT EXISTS friendships (
 );
 
 CREATE INDEX IF NOT EXISTS idx_action_log_user ON action_log(user_id);
+-- Промокоды (например "100LVL") — один раз на пользователя на код,
+-- чтобы нельзя было повторно применить и, например, бесконечно продлевать
+-- подарочный Premium за 100 уровень.
+CREATE TABLE IF NOT EXISTS promo_redemptions (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  code TEXT NOT NULL,
+  redeemed_at TEXT NOT NULL,
+  PRIMARY KEY (user_id, code)
+);
+
 CREATE INDEX IF NOT EXISTS idx_schedule_user ON user_schedule(user_id);
 CREATE INDEX IF NOT EXISTS idx_diary_user ON diary_entries(user_id);
 CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id);

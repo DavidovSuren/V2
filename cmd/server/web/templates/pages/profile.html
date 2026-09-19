@@ -34,6 +34,15 @@
 </div>
 
 <div class="card">
+  <div style="font-weight:600;margin-bottom:8px">Промокод</div>
+  {{if .PromoError}}<div class="toast mb-8">{{.PromoError}}</div>{{end}}
+  <form method="POST" action="/promo" class="add-friend-row">
+    <input type="text" name="code" placeholder="Введи промокод" style="text-transform:uppercase">
+    <button class="btn btn-primary" type="submit">Применить</button>
+  </form>
+</div>
+
+<div class="card">
   <div class="flex justify-between mb-8"><span>Общий прогресс</span><strong>{{printf "%.0f" .ProgressPct}}%</strong></div>
   <div class="flex justify-between mb-8"><span>Уровень</span><strong>{{.Level}}</strong></div>
   <div class="flex justify-between mb-8"><span>XP</span><strong>{{.XP}}</strong></div>
