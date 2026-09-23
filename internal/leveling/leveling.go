@@ -33,6 +33,16 @@ func XPForTaskCompletion(streakCurrentAfter int) int {
 	return base + streakBonus
 }
 
+// FullYearXP — XP за идеальный год: анкета + 365 заданий подряд без
+// пропусков (стрик 1..365). Столько даёт промокод на 100 уровень.
+func FullYearXP() int {
+	xp := QuizCompleteXP
+	for streak := 1; streak <= TotalTasks; streak++ {
+		xp += XPForTaskCompletion(streak)
+	}
+	return xp
+}
+
 func CategoryProgressPct(doneInCategory, totalInCategoryBank int) int {
 	if totalInCategoryBank == 0 {
 		return 0

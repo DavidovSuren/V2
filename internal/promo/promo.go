@@ -11,10 +11,15 @@ var codes = map[string]Effect{
 	"100LVL": EffectLevel100,
 }
 
+// aliases — другие написания того же промокода. Все они сохраняются под
+// каноническим кодом, так что применить его можно только один раз.
+var aliases = map[string]string{
+	"LVL100": "100LVL",
+}
+
 // Lookup нормализует код (регистр/пробелы) и возвращает его эффект.
 func Lookup(rawCode string) (Effect, bool) {
-	code := normalize(rawCode)
-	effect, ok := codes[code]
+	effect, ok := codes[CanonicalCode(rawCode)]
 	return effect, ok
 }
 
@@ -22,7 +27,11 @@ func Lookup(rawCode string) (Effect, bool) {
 // сохранении в promo_redemptions (чтобы "100lvl" и "100LVL" считались
 // одним и тем же промокодом).
 func CanonicalCode(rawCode string) string {
-	return normalize(rawCode)
+	code := normalize(rawCode)
+	if canon, ok := aliases[code]; ok {
+		return canon
+	}
+	return code
 }
 
 func normalize(s string) string {

@@ -13,12 +13,6 @@ import (
 
 // handleOnboardingSubmit — экран "Приветствие". Порт backend/routes/onboarding.js (POST /onboarding).
 func (a *App) handleOnboardingSubmit(w http.ResponseWriter, r *http.Request) {
-	tgID, ok := a.Sessions.TgIDFromRequest(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
 	_ = r.ParseMultipartForm(2 << 20) // фото — тот же стаб, что в исходном MVP: не сохраняются, важно лишь количество
 	name := strings.TrimSpace(r.FormValue("name"))
 	ageGroup := r.FormValue("ageGroup")
@@ -28,8 +22,21 @@ func (a *App) handleOnboardingSubmit(w http.ResponseWriter, r *http.Request) {
 		photoCount = len(r.MultipartForm.File["photos"])
 	}
 
+	// Без сессии (страница открыта не из Telegram) раньше был молчаливый
+	// редирект на "/" — форма просто очищалась, и казалось, что ничего не работает.
+	tgID, ok := a.Sessions.TgIDFromRequest(r)
+	if !ok {
+		a.render(w, "welcome.html", WelcomeData{
+			RefCode: refCode, Name: name, AgeGroup: ageGroup,
+			NeedBootstrap: true, DevAuth: a.DevFakeAuth,
+			Error: "Не удалось определить пользователя Telegram. Открой приложение через бота в Telegram.",
+		})
+		return
+	}
+
 	if name == "" || ageGroup == "" || photoCount == 0 {
-		a.render(w, "welcome.html", WelcomeData{RefCode: refCode, Error: "Заполни имя, возрастную группу и загрузи хотя бы одно фото"})
+		a.render(w, "welcome.html", WelcomeData{RefCode: refCode, Name: name, AgeGroup: ageGroup,
+			Error: "Заполни имя, возрастную группу и загрузи хотя бы одно фото"})
 		return
 	}
 
@@ -77,8 +84,14 @@ func (a *App) handleOnboardingSubmit(w http.ResponseWriter, r *http.Request) {
 		referralCode = codes.Generate(7)
 	}
 
+	var username sql.NullString
+	if c, err := r.Cookie(usernameCookieName); err == nil && c.Value != "" {
+		username = sql.NullString{String: c.Value, Valid: true}
+	}
+
 	newUser := store.NewUser{
 		TgID:               tgID,
+		Username:           username,
 		Name:               name,
 		AgeGroup:           ageGroup,
 		PhotosJSON:         string(photosJSON),

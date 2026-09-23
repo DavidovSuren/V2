@@ -66,11 +66,16 @@ func weeklyReport(s *store.Store, botToken string) {
 		if err != nil {
 			continue
 		}
+		full, err := s.GetUserByID(u.ID)
+		if err != nil || full == nil {
+			continue
+		}
 		topCategory, _ := s.TopDoneCategory(u.ID, from)
 		focusNext, _ := s.TopWeightedRemainingCategory(u.ID)
 		_ = s.AddXP(u.ID, leveling.WeeklyReportXP)
 
-		text := fmt.Sprintf("📊 Недельный отчёт\n\nВыполнено заданий: %d / 7\nПропущено: %d\n", done, skipped)
+		text := fmt.Sprintf("📊 Недельный отчёт\n\nВыполнено заданий: %d / 7\nПропущено: %d\nТекущий стрик: %d дней\n",
+			done, skipped, full.StreakCurrent)
 		if topCategory != "" {
 			text += fmt.Sprintf("Главный результат недели: «%s»\n", topCategory)
 		}

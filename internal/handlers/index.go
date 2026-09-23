@@ -6,6 +6,12 @@ type WelcomeData struct {
 	RefCode       string
 	Error         string
 	NeedBootstrap bool
+	// DevAuth — DEV_ALLOW_FAKE_AUTH: bootstrap.js вне Telegram заводит
+	// тестовую сессию "debug:<id>", чтобы приложение работало в обычном браузере.
+	DevAuth bool
+	// Name/AgeGroup — чтобы при ошибке не заставлять заполнять форму заново.
+	Name     string
+	AgeGroup string
 }
 
 // handleIndex — "/" ветвится по состоянию пользователя: нет сессии →
@@ -16,7 +22,7 @@ func (a *App) handleIndex(w http.ResponseWriter, r *http.Request) {
 	tgID, ok := a.Sessions.TgIDFromRequest(r)
 	if !ok {
 		// Сессии ещё нет — только тут bootstrap.js должен слать initData.
-		a.render(w, "welcome.html", WelcomeData{RefCode: refCodeFromCookie(r), NeedBootstrap: true})
+		a.render(w, "welcome.html", WelcomeData{RefCode: refCodeFromCookie(r), NeedBootstrap: true, DevAuth: a.DevFakeAuth})
 		return
 	}
 

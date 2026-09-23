@@ -36,3 +36,16 @@ func (a *App) requireQuizDone(next http.HandlerFunc) http.HandlerFunc {
 		next(w, r)
 	})
 }
+
+// requireQuizPending — анкета проходится один раз: повторная отправка
+// последнего вопроса после построения плана упала бы на уникальном ключе
+// user_schedule (user_id, day_index) и ещё раз начислила бы XP за анкету.
+func (a *App) requireQuizPending(next http.HandlerFunc) http.HandlerFunc {
+	return a.requireOnboarded(func(w http.ResponseWriter, r *http.Request) {
+		if userFromCtx(r).Gender.Valid {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		next(w, r)
+	})
+}

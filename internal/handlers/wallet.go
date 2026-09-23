@@ -7,7 +7,10 @@ type WalletData struct {
 	Balance         int
 	PayingReferrals int
 	History         []WalletHistoryItem
+	Message         string
 }
+
+const withdrawSoonMsg = "Вывод средств скоро появится — сейчас баланс копится в приложении."
 
 type WalletHistoryItem struct {
 	Amount    int
@@ -45,6 +48,7 @@ func (a *App) handleWalletShow(w http.ResponseWriter, r *http.Request) {
 
 	a.render(w, "wallet.html", WalletData{
 		Code: user.PremiumAgentCode.String, Balance: balance, PayingReferrals: paying, History: items,
+		Message: map[string]string{"soon": withdrawSoonMsg}[r.URL.Query().Get("msg")],
 	})
 }
 

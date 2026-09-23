@@ -1,3 +1,11 @@
 .env
 *.exe
 /server
+node_modules/
+dist/
+build/
+coverage/
+.cache/
+tmp/
+logs/
+*.log

@@ -22,6 +22,7 @@ type HomeData struct {
 	FocusAreas        []string
 	Celebrate         *achievements.Meta
 	CelebrateLevel100 bool
+	Diamond           bool // уровень 100 — алмаз у иконки профиля
 }
 
 func (a *App) renderHome(w http.ResponseWriter, r *http.Request, user *models.User) {
@@ -33,6 +34,7 @@ func (a *App) renderHome(w http.ResponseWriter, r *http.Request, user *models.Us
 		ProgressPct:  progressPct,
 		CircleOffset: offset,
 		CanActToday:  !user.LastActionDate.Valid || user.LastActionDate.String != reports.TodayMoscow(),
+		Diamond:      user.Level >= 100,
 	}
 
 	if focus := r.URL.Query().Get("focus"); focus != "" {

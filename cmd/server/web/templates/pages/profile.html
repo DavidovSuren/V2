@@ -1,7 +1,8 @@
 {{define "content"}}
 <div class="text-center mb-8">
-  <div style="width:80px;height:80px;border-radius:50%;background:var(--tg-secondary-bg-color);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:36px">
+  <div class="avatar-icon" style="width:80px;height:80px;border-radius:50%;background:var(--tg-secondary-bg-color);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:36px">
     {{if eq .Gender "female"}}👩{{else if eq .Gender "male"}}🧑{{else}}👤{{end}}
+    {{if .Diamond}}<span class="diamond-badge" title="Уровень 100">💎</span>{{end}}
   </div>
   <h1 style="margin:0">{{.Name}}</h1>
   <div class="subtitle">{{.AgeGroup}}</div>

@@ -9,6 +9,7 @@
 
 {{if eq .Tab "friends"}}
 {{if .PremiumView}}
+{{if .AddFriendErr}}<div class="toast mb-8">{{.AddFriendErr}}</div>{{end}}
 <form method="POST" action="/friends/add" class="add-friend-row">
   <input type="text" name="username" placeholder="@username друга">
   <button class="btn btn-primary" type="submit">Добавить</button>

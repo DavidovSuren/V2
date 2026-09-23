@@ -3,6 +3,29 @@
 // Дальше вся навигация — обычные ссылки и формы, без единого fetch.
 (function () {
   var tg = window.Telegram && window.Telegram.WebApp;
+  var target = document.getElementById('bootstrap-target');
+
+  // После появления сессии перезагружаем только "/" — страница ошибки
+  // приходит ответом на POST /onboarding, и reload предложил бы
+  // переотправить форму. Там сессия уже есть: достаточно нажать "Продолжить".
+  function bootstrap(body) {
+    fetch('/auth/bootstrap', { method: 'POST', body: body })
+      .then(function (r) { if (r.ok && location.pathname === '/') location.reload(); });
+  }
+
+  // Вне Telegram (обычный браузер) initData нет. В dev-режиме сервер
+  // помечает #bootstrap-target, и мы заводим тестовую сессию с id, который
+  // хранится в браузере, — при следующем заходе это тот же пользователь.
+  if (target && target.dataset.devAuth && !(tg && tg.initData)) {
+    var id;
+    try { id = localStorage.getItem('v2_dev_id'); } catch (e) { /* приватный режим */ }
+    if (!id) {
+      id = 'browser-' + Math.random().toString(36).slice(2, 10);
+      try { localStorage.setItem('v2_dev_id', id); } catch (e) { /* не сохранится — не страшно */ }
+    }
+    bootstrap('debug:' + id);
+  }
+
   if (!tg) return;
 
   tg.ready();
@@ -26,9 +49,8 @@
   // #bootstrap-target существует только в разметке приветственного экрана
   // (не авторизован) — на остальных страницах сессия уже есть и слать
   // initData незачем.
-  if (document.getElementById('bootstrap-target') && tg.initData) {
-    fetch('/auth/bootstrap', { method: 'POST', body: tg.initData })
-      .then(function (r) { if (r.ok) location.reload(); });
+  if (target && tg.initData) {
+    bootstrap(tg.initData);
   }
 })();
 

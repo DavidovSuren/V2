@@ -93,6 +93,24 @@ go run ./cmd/server
 завести сессию через `curl -X POST /auth/bootstrap --data-raw "debug:<любой_id>"`
 вместо реального initData.
 
+### Тесты
+
+```bash
+go test ./...
+```
+
+Сквозные тесты HTTP-хендлеров (`internal/handlers/flow_test.go`) ходят в
+настоящий PostgreSQL и без `TEST_DATABASE_URL` пропускаются. Каждый тест
+работает в своей временной схеме и удаляет её за собой:
+
+```bash
+TEST_DATABASE_URL="postgres://v2:changeme@localhost:5432/v2?sslmode=disable" go test ./...
+```
+
+`internal/scheduler/testdata/node_parity.json` — эталон, снятый со старого
+Node-планировщика (коммит `14bc237`): Go-версия обязана выдавать те же
+веса и тот же порядок 365 заданий.
+
 ### 2. Доступ из Telegram
 
 Telegram требует HTTPS-адрес для Mini App. Локально — HTTPS-туннель

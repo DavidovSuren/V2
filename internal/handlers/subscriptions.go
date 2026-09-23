@@ -30,6 +30,7 @@ type ProfileData struct {
 	HasPremiumAgent   bool
 	Tiers             []TierQuote
 	PromoError        string
+	Diamond           bool
 }
 
 func (a *App) tierQuotes(user *models.User) []TierQuote {
@@ -71,6 +72,7 @@ func (a *App) handleProfile(w http.ResponseWriter, r *http.Request) {
 		HasPremiumAgent: user.HasPremiumAgentCode(),
 		Tiers:           a.tierQuotes(user),
 		PromoError:      r.URL.Query().Get("promo_err"),
+		Diamond:         level >= 100,
 	})
 }
 
@@ -100,7 +102,7 @@ func (a *App) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 
 	if user.ReferredByUserID.Valid && user.ReferredByCodeType.String == "premium_agent" {
 		referrerCommissionUserID = user.ReferredByUserID
-		commissionAmount = pricePaid * referrals.PremiumAgentCommissionPct / 100
+		commissionAmount = referrals.CommissionAmount(pricePaid)
 	}
 
 	now := time.Now().UTC()

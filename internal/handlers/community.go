@@ -24,7 +24,7 @@ func (a *App) handleCommunity(w http.ResponseWriter, r *http.Request) {
 	tab := r.URL.Query().Get("tab")
 	premium := subscription.IsPremiumActive(user.SubscriptionTier, user.SubscriptionExpiresAt)
 
-	data := CommunityData{Tab: tab, PremiumView: premium}
+	data := CommunityData{Tab: tab, PremiumView: premium, AddFriendErr: friendAddErrors[r.URL.Query().Get("err")]}
 
 	if tab == "friends" {
 		if !premium {
@@ -64,6 +64,12 @@ func (a *App) handleCommunity(w http.ResponseWriter, r *http.Request) {
 	a.render(w, "community.html", data)
 }
 
+// Тексты ошибок — те же, что отдавал POST /api/friends/add в Node-версии.
+var friendAddErrors = map[string]string{
+	"notfound": "Такой пользователь не найден в приложении",
+	"self":     "Нельзя добавить самого себя",
+}
+
 func (a *App) handleFriendAdd(w http.ResponseWriter, r *http.Request) {
 	user := userFromCtx(r)
 	r.ParseForm()
@@ -79,8 +85,12 @@ func (a *App) handleFriendAdd(w http.ResponseWriter, r *http.Request) {
 		a.serverError(w, err)
 		return
 	}
-	if friend == nil || friend.ID == user.ID {
+	if friend == nil {
 		http.Redirect(w, r, "/community?tab=friends&err=notfound", http.StatusSeeOther)
+		return
+	}
+	if friend.ID == user.ID {
+		http.Redirect(w, r, "/community?tab=friends&err=self", http.StatusSeeOther)
 		return
 	}
 

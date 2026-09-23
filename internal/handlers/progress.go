@@ -39,12 +39,12 @@ func (a *App) handleProgress(w http.ResponseWriter, r *http.Request) {
 		doneByCategory[d.Category] = d.Done
 	}
 
-	totals := a.CategoryTotals(user.Gender.String)
 	var categories []CategoryProgress
-	for cat, total := range totals {
+	for _, ct := range a.CategoryTotals(user.Gender.String) {
+		done := doneByCategory[ct.Category]
 		categories = append(categories, CategoryProgress{
-			Name: cat, Total: total, Done: doneByCategory[cat],
-			Pct: leveling.CategoryProgressPct(doneByCategory[cat], total),
+			Name: ct.Category, Total: ct.Total, Done: done,
+			Pct: leveling.CategoryProgressPct(done, ct.Total),
 		})
 	}
 

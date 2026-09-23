@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"version20/internal/achievements"
+	"version20/internal/leveling"
 	"version20/internal/promo"
 )
 
@@ -64,9 +65,10 @@ func (a *App) handlePromoRedeem(w http.ResponseWriter, r *http.Request) {
 		}
 		if _, err := tx.Exec(`
 			UPDATE users SET completed_count = 365, day_index = 365, level = 100,
-			                 streak_current = 365, streak_best = GREATEST(streak_best, 365)
+			                 streak_current = 365, streak_best = GREATEST(streak_best, 365),
+			                 xp = GREATEST(xp, $2)
 			WHERE id = $1
-		`, user.ID); err != nil {
+		`, user.ID, leveling.FullYearXP()); err != nil {
 			a.serverError(w, err)
 			return
 		}

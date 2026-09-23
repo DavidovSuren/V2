@@ -27,3 +27,9 @@ func DiscountPctForReferrer(paidReferralsCount int) int {
 func PriceAfterDiscount(basePrice, discountPct int) int {
 	return int(float64(basePrice)*(100-float64(discountPct))/100 + 0.5)
 }
+
+// CommissionAmount — доля держателя премиум-агентского кода с оплаты,
+// округление как Math.round в Node-версии (369 ₽ -> 185, а не 184).
+func CommissionAmount(pricePaid int) int {
+	return int(float64(pricePaid)*PremiumAgentCommissionPct/100 + 0.5)
+}

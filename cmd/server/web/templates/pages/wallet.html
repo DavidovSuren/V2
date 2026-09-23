@@ -23,6 +23,7 @@
     <div class="subtitle" style="margin:0">Пока пусто</div>
   {{end}}
 </div>
+{{if .Message}}<div class="toast mb-8">{{.Message}}</div>{{end}}
 <form method="POST" action="/wallet/withdraw">
   <button class="btn btn-secondary" type="submit">Вывести средства</button>
 </form>

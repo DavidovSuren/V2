@@ -51,12 +51,27 @@ func (a *App) TaskBankFor(gender string) []models.Task {
 	}
 }
 
-func (a *App) CategoryTotals(gender string) map[string]int {
-	totals := map[string]int{}
+// CategoryTotals — сколько заданий в каждой категории банка, в порядке
+// первого появления категории в банке (как Object.keys в Node-версии),
+// чтобы экран "Прогресс" не перемешивал направления при каждом заходе.
+func (a *App) CategoryTotals(gender string) []CategoryTotal {
+	var out []CategoryTotal
+	idx := map[string]int{}
 	for _, t := range a.TaskBankFor(gender) {
-		totals[t.Category]++
+		i, ok := idx[t.Category]
+		if !ok {
+			i = len(out)
+			idx[t.Category] = i
+			out = append(out, CategoryTotal{Category: t.Category})
+		}
+		out[i].Total++
 	}
-	return totals
+	return out
+}
+
+type CategoryTotal struct {
+	Category string
+	Total    int
 }
 
 func (a *App) Routes() http.Handler {
@@ -72,8 +87,8 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("GET /", a.handleIndex)
 	mux.HandleFunc("POST /onboarding", a.handleOnboardingSubmit)
 
-	mux.HandleFunc("GET /quiz/{n}", a.requireOnboarded(a.handleQuizShow))
-	mux.HandleFunc("POST /quiz/{n}", a.requireOnboarded(a.handleQuizSubmit))
+	mux.HandleFunc("GET /quiz/{n}", a.requireQuizPending(a.handleQuizShow))
+	mux.HandleFunc("POST /quiz/{n}", a.requireQuizPending(a.handleQuizSubmit))
 
 	mux.HandleFunc("GET /today/skip", a.requireQuizDone(a.handleSkipConfirm))
 	mux.HandleFunc("POST /today/skip", a.requireQuizDone(a.handleSkipSubmit))
