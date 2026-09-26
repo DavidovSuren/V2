@@ -41,16 +41,7 @@ func testTemplates(t *testing.T) map[string]*template.Template {
 		t.Fatalf("шаблоны не найдены: %v", err)
 	}
 	partials, _ := fs.Glob(fsys, "web/templates/partials/*.html")
-	funcs := template.FuncMap{
-		"add": func(a, b int) int { return a + b },
-		"seq": func(from, to int) []int {
-			out := []int{}
-			for i := from; i <= to; i++ {
-				out = append(out, i)
-			}
-			return out
-		},
-	}
+	funcs := TemplateFuncs()
 	out := map[string]*template.Template{}
 	for _, p := range pages {
 		files := append([]string{"web/templates/layout.html"}, partials...)

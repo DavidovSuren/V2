@@ -87,6 +87,8 @@ func (s *Store) PayingReferralsCount(userID int64) (int, error) {
 }
 
 type WalletTx struct {
+	Kind      string         // income | withdrawal | refund
+	Status    sql.NullString // статус заявки на вывод (для kind = withdrawal)
 	Amount    int
 	Note      sql.NullString
 	CreatedAt string
@@ -94,7 +96,9 @@ type WalletTx struct {
 
 func (s *Store) WalletHistory(userID int64) ([]WalletTx, error) {
 	rows, err := s.DB.Query(`
-		SELECT amount, note, created_at FROM wallet_transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50
+		SELECT t.kind, wd.status, t.amount, t.note, t.created_at
+		FROM wallet_transactions t LEFT JOIN withdrawals wd ON wd.id = t.withdrawal_id
+		WHERE t.user_id = $1 ORDER BY t.created_at DESC, t.id DESC LIMIT 50
 	`, userID)
 	if err != nil {
 		return nil, err
@@ -104,7 +108,7 @@ func (s *Store) WalletHistory(userID int64) ([]WalletTx, error) {
 	var out []WalletTx
 	for rows.Next() {
 		var w WalletTx
-		if err := rows.Scan(&w.Amount, &w.Note, &w.CreatedAt); err != nil {
+		if err := rows.Scan(&w.Kind, &w.Status, &w.Amount, &w.Note, &w.CreatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, w)

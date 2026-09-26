@@ -184,3 +184,25 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
 .mt-8 { margin-top: 8px; } .mt-16 { margin-top: 16px; } .mb-8 { margin-bottom: 8px; }
 .flex { display: flex; } .gap-8 { gap: 8px; }
 .justify-between { justify-content: space-between; } .items-center { align-items: center; }
+
+/* Кошелёк и вывод (этап 4; окончательный вид — этапы 8–9) */
+.page-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.page-head h1 { margin: 0; }
+.back { font-size: 22px; text-decoration: none; }
+.pill { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; text-decoration: none; }
+.pill-gold { background: color-mix(in srgb, #D4B06A 16%, transparent); color: #B08A43; }
+.pill-muted { background: color-mix(in srgb, currentColor 8%, transparent); }
+.wallet-amount { font-size: 36px; font-weight: 700; margin: 8px 0 4px; }
+.btn-disabled { opacity: .6; pointer-events: none; }
+.stat-row { display: flex; gap: 10px; }
+.stat-row .card { flex: 1; }
+.stat-value { font-size: 22px; font-weight: 600; }
+.share-row { display: flex; gap: 8px; align-items: center; }
+.share-link { flex: 1; font-size: 13px; overflow-wrap: anywhere; }
+.share-btn { width: 42px; height: 42px; border-radius: 12px; background: #D4B06A; color: #1A1408; display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 700; }
+.section-label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .7; margin: 16px 0 8px; }
+.money-plus { color: #2F7D5B; }
+.money-minus { color: #A3441C; }
+.money-gold { color: #B08A43; font-size: 20px; }
+.notice-ok { padding: 10px 12px; border-radius: 12px; margin-bottom: 12px; font-size: 13px; background: color-mix(in srgb, #8FD1B4 14%, transparent); }
+.field-error { color: #A3441C; font-size: 13px; margin-top: 4px; }

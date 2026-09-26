@@ -184,6 +184,30 @@ ALTER TABLE subscription_payments ADD COLUMN IF NOT EXISTS charge_id TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_charge ON subscription_payments(charge_id);
 CREATE INDEX IF NOT EXISTS idx_users_referred_by ON users(referred_by_user_id);
 
+-- Вывод из кошелька (этап 4): раз в месяц, 15-го, с удержанием НДФЛ.
+-- Номер карты хранится только зашифрованным (AES-256-GCM, CARD_ENC_KEY).
+CREATE TABLE IF NOT EXISTS withdrawals (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  month_key TEXT NOT NULL,
+  gross INTEGER NOT NULL,
+  tax INTEGER NOT NULL,
+  net INTEGER NOT NULL,
+  tax_pct INTEGER NOT NULL,
+  card_last4 TEXT NOT NULL,
+  card_enc TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','paid','rejected')),
+  created_at TEXT NOT NULL,
+  processed_at TEXT,
+  reject_reason TEXT
+);
+-- Один вывод в месяц; отклонённая заявка не мешает подать новую.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_withdrawals_month ON withdrawals(user_id, month_key) WHERE status <> 'rejected';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS payout_card_enc TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS payout_card_last4 TEXT;
+ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'income';
+ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS withdrawal_id INTEGER REFERENCES withdrawals(id);
+
 CREATE INDEX IF NOT EXISTS idx_schedule_user ON user_schedule(user_id);
 CREATE INDEX IF NOT EXISTS idx_diary_user ON diary_entries(user_id);
 CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id);

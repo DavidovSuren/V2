@@ -1,0 +1,33 @@
+{{define "content"}}
+<div class="page-head">
+  <a href="/wallet" class="back" aria-label="Назад">←</a>
+  <h1>Вывод на карту</h1>
+</div>
+
+{{if .Blocked}}
+<div class="toast mb-8">{{.Blocked}}</div>
+<a class="btn btn-secondary" href="/wallet">К кошельку</a>
+{{else}}
+<div class="notice-ok">Сегодня 15-е — день вывода</div>
+
+<form method="POST" action="/wallet/withdraw" id="withdraw-form">
+  <div class="input-group">
+    <label for="card">Номер карты банка РФ — куда отправить деньги</label>
+    <input id="card" name="card" type="text" inputmode="numeric" autocomplete="cc-number"
+           value="{{if .Card}}{{.Card}}{{else}}{{.SavedMask}}{{end}}" placeholder="2200 1234 5678 9012" data-card-input required>
+    {{if .CardError}}<div class="field-error">{{.CardError}}</div>{{end}}
+    <div class="subtitle" style="margin:4px 0 0">{{if .SavedMask}}Сохранённая карта — можно заменить{{else}}Запомним карту — в следующий раз вводить не придётся{{end}}</div>
+  </div>
+
+  <div class="card">
+    <div class="flex justify-between mb-8"><span class="subtitle" style="margin:0">Сумма вывода</span><span>{{rub .Split.Gross}}</span></div>
+    <div class="flex justify-between mb-8"><span class="subtitle" style="margin:0">НДФЛ {{.TaxPct}}% — платим за тебя</span><span class="money-minus">−{{rub .Split.Tax}}</span></div>
+    <div class="flex justify-between" style="font-weight:600"><span>Придёт на карту</span><span class="money-gold">{{rub .Split.Net}}</span></div>
+  </div>
+
+  <p class="subtitle">Налог удерживаем и перечисляем в бюджет сами. Деньги приходят в течение 3 рабочих дней.</p>
+  <button class="btn btn-primary" type="submit">Вывести {{rub .Split.Net}}</button>
+</form>
+<script src="/static/card.js" defer></script>
+{{end}}
+{{end}}

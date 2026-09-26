@@ -1,30 +1,65 @@
 {{define "content"}}
-<div class="flex items-center gap-8 mb-8">
-  <a href="/profile" style="font-size:22px;text-decoration:none">←</a>
-  <h1 style="margin:0">Кошелёк</h1>
+<div class="page-head">
+  <a href="/profile" class="back" aria-label="Назад">←</a>
+  <h1>Кошелёк</h1>
 </div>
-<div class="card text-center">
-  <div class="subtitle" style="margin-bottom:4px">Баланс</div>
-  <div style="font-size:32px;font-weight:700">{{.Balance}} ₽</div>
-</div>
-<div class="card">
-  <div class="flex justify-between"><span>Оплатили подписку по твоему коду</span><strong>{{.PayingReferrals}}</strong></div>
-</div>
-<div class="card">
-  <h2 style="font-size:15px;margin-bottom:8px">История начислений</h2>
-  {{if .History}}
-    {{range .History}}
-    <div class="flex justify-between mb-8">
-      <span class="subtitle" style="margin:0">{{.CreatedAt}} · {{.Note}}</span>
-      <strong>+{{.Amount}} ₽</strong>
-    </div>
-    {{end}}
+
+{{if .Message}}<div class="toast mb-8">{{.Message}}</div>{{end}}
+
+<div class="card wallet-balance">
+  <div class="flex justify-between items-center">
+    <span class="subtitle" style="margin:0">Доступно к выводу</span>
+    {{if .NoSubscription}}<a class="pill pill-muted" href="/plans">Нет подписки — доход не начисляется</a>{{else}}<span class="pill pill-gold">{{.RateLabel}}</span>{{end}}
+  </div>
+  <div class="wallet-amount">{{rub .Summary.Balance}}</div>
+  <div class="subtitle">Всего заработано {{rub .Summary.Earned}} · выведено {{rub .Summary.Withdrawn}}</div>
+  {{if .RateHint}}<div class="subtitle">{{.RateHint}}</div>{{end}}
+  {{if .PayoutToday}}
+  <a class="btn btn-primary" href="/wallet/withdraw">Вывести</a>
   {{else}}
-    <div class="subtitle" style="margin:0">Пока пусто</div>
+  <span class="btn btn-secondary btn-disabled" aria-disabled="true">Вывод {{.NextPayout}}</span>
   {{end}}
 </div>
-{{if .Message}}<div class="toast mb-8">{{.Message}}</div>{{end}}
-<form method="POST" action="/wallet/withdraw">
-  <button class="btn btn-secondary" type="submit">Вывести средства</button>
-</form>
+
+<div class="stat-row">
+  <div class="card stat"><div class="subtitle" style="margin:0">Пришли по ссылке</div><div class="stat-value">{{.InvitedCount}}</div></div>
+  <div class="card stat"><div class="subtitle" style="margin:0">Оплатили</div><div class="stat-value">{{.PaidCount}}</div></div>
+</div>
+
+<div class="card">
+  <div class="subtitle" style="margin-bottom:8px">Твоя ссылка</div>
+  <div class="share-row">
+    <div class="share-link">{{.Link}}</div>
+    {{if .ShareURL}}<a class="share-btn" href="{{.ShareURL}}" data-tg-link aria-label="Поделиться ссылкой">↗</a>{{end}}
+  </div>
+</div>
+
+<h2 class="section-label">Приглашённые</h2>
+<div class="card">
+  {{range .People}}
+  <div class="list-item">
+    <div class="list-avatar">{{.Initial}}</div>
+    <div style="flex:1">
+      <div class="list-name">{{.Name}}</div>
+      <div class="subtitle" style="margin:0">{{.Status}}</div>
+    </div>
+    {{if gt .Earned 0}}<strong class="money-plus">+{{rub .Earned}}</strong>{{else}}<span class="subtitle" style="margin:0">{{.Right}}</span>{{end}}
+  </div>
+  {{else}}
+  <div class="subtitle" style="margin:0">Пока никого — поделись ссылкой</div>
+  {{end}}
+</div>
+
+<h2 class="section-label">История</h2>
+<div class="card">
+  {{range .History}}
+  <div class="flex justify-between mb-8">
+    <span class="subtitle" style="margin:0">{{.Date}} · {{.Note}}{{if .Status}} · {{.Status}}{{end}}</span>
+    <strong class="{{if gt .Amount 0}}money-plus{{end}}">{{if gt .Amount 0}}+{{end}}{{rub .Amount}}</strong>
+  </div>
+  {{else}}
+  <div class="subtitle" style="margin:0">Пока пусто</div>
+  {{end}}
+</div>
+<p class="text-center"><a href="/terms">Условия партнёрской программы</a></p>
 {{end}}

@@ -72,3 +72,15 @@ var celebrateDlg = document.getElementById('modal-celebrate');
 if (celebrateDlg && celebrateDlg.dataset.autoshow === '1') {
   celebrateDlg.showModal();
 }
+
+// Ссылки t.me (например, «Поделиться») внутри Telegram открываем через
+// openTelegramLink — иначе Mini App уйдёт на страницу во встроенном браузере.
+document.querySelectorAll('[data-tg-link]').forEach(function (link) {
+  link.addEventListener('click', function (e) {
+    var tg = window.Telegram && window.Telegram.WebApp;
+    if (tg && tg.openTelegramLink && tg.initData) {
+      e.preventDefault();
+      tg.openTelegramLink(link.href);
+    }
+  });
+});

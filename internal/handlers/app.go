@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"version20/internal/auth"
+	"version20/internal/cardcrypt"
 	"version20/internal/content"
 	"version20/internal/models"
 	"version20/internal/store"
@@ -49,6 +50,8 @@ type App struct {
 	MiniAppShortName string // MINIAPP_SHORT_NAME — короткое имя Mini App в @BotFather
 
 	TaxWithholdPct int // TAX_WITHHOLD_PCT — НДФЛ при выводе; 0 — по умолчанию 13
+	// CardKey — ключ шифрования номеров карт (CARD_ENC_KEY); nil — вывод выключен.
+	CardKey *cardcrypt.Key
 }
 
 func (a *App) Questions() []models.Question {
@@ -153,6 +156,7 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("GET /terms", a.handleTerms)
 
 	mux.HandleFunc("GET /wallet", a.requireOnboarded(a.handleWalletShow))
+	mux.HandleFunc("GET /wallet/withdraw", a.requireOnboarded(a.handleWithdrawShow))
 	mux.HandleFunc("POST /wallet/withdraw", a.requireOnboarded(a.handleWalletWithdraw))
 	mux.HandleFunc("POST /partner/password", a.requireOnboarded(a.handlePartnerPasswordSet))
 
@@ -170,6 +174,10 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("GET /admin/users/{id}", a.requireAdmin(a.handleAdminUserEdit))
 	mux.HandleFunc("POST /admin/users/{id}", a.requireAdmin(a.handleAdminUserSave))
 	mux.HandleFunc("POST /admin/users/{id}/reset-partner-password", a.requireAdmin(a.handleAdminPartnerResetPassword))
+	mux.HandleFunc("GET /admin/withdrawals", a.requireAdmin(a.handleAdminWithdrawals))
+	mux.HandleFunc("GET /admin/withdrawals.csv", a.requireAdmin(a.handleAdminWithdrawalsCSV))
+	mux.HandleFunc("POST /admin/withdrawals/{id}/paid", a.requireAdmin(a.handleAdminWithdrawalPaid))
+	mux.HandleFunc("POST /admin/withdrawals/{id}/reject", a.requireAdmin(a.handleAdminWithdrawalReject))
 
 	// Кабинет партнёра (вне Telegram).
 	mux.HandleFunc("GET /partner/login", a.handlePartnerLoginShow)

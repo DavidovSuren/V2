@@ -7,11 +7,14 @@
   <div class="grid">
     <div class="card stat"><div class="v">{{.Users}}</div><div class="l">пользователей</div></div>
     <div class="card stat"><div class="v">{{.Onboarded}}</div><div class="l">прошли анкету</div></div>
+    <div class="card stat"><div class="v">{{.Trial}}</div><div class="l">в пробном периоде</div></div>
     <div class="card stat"><div class="v">{{.Plus}}</div><div class="l">активный Plus</div></div>
     <div class="card stat"><div class="v">{{.Premium}}</div><div class="l">активный Premium</div></div>
     <div class="card stat"><div class="v">{{.Partners}}</div><div class="l">партнёров с доходом</div></div>
-    <div class="card stat"><div class="v">{{.Revenue}} ₽</div><div class="l">оплат всего</div></div>
-    <div class="card stat"><div class="v">{{.Commissions}} ₽</div><div class="l">партнёрских начислений</div></div>
+    <div class="card stat"><div class="v">{{rub .RevenueMonth}}</div><div class="l">выручка за месяц</div></div>
+    <div class="card stat"><div class="v">{{rub .Revenue}}</div><div class="l">оплат всего</div></div>
+    <div class="card stat"><div class="v">{{rub .Commissions}}</div><div class="l">партнёрских начислений</div></div>
+    <div class="card stat"><div class="v"><a href="/admin/withdrawals">{{.PendingWithdrawals}}</a></div><div class="l">заявок на вывод · {{rub .PendingWithdrawalsSum}} к выплате</div></div>
   </div>
   {{end}}
 </main>

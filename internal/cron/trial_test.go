@@ -31,3 +31,9 @@ func TestTrialEndsTomorrow(t *testing.T) {
 		}
 	}
 }
+
+func TestPaydayText(t *testing.T) {
+	if got := paydayText(5772); got[:len("Сегодня день вывода: доступно 5 772 ₽")] != "Сегодня день вывода: доступно 5 772 ₽" {
+		t.Errorf("текст: %q", got)
+	}
+}

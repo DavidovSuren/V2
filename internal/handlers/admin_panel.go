@@ -10,7 +10,9 @@ import (
 	"unicode/utf8"
 
 	"version20/internal/models"
+	"version20/internal/reports"
 	"version20/internal/store"
+	"version20/internal/subscription"
 )
 
 // Админка (/admin/...) — отдельный веб-интерфейс вне Telegram: вход по
@@ -91,7 +93,11 @@ func (a *App) handleAdminLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
-	stats, err := a.Store.Stats(time.Now().UTC().Format(time.RFC3339))
+	now := a.now()
+	msk := now.In(reports.MoscowLocation())
+	monthStart := time.Date(msk.Year(), msk.Month(), 1, 0, 0, 0, 0, msk.Location()).UTC().Format(time.RFC3339)
+	stats, err := a.Store.Stats(now.UTC().Format(time.RFC3339),
+		now.Add(-subscription.TrialDays*24*time.Hour).UTC().Format(time.RFC3339), monthStart)
 	if err != nil {
 		a.serverError(w, err)
 		return

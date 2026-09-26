@@ -59,22 +59,31 @@ func (s *Store) AdminUpdateUser(id int64, name, username, tier, expiresAt string
 }
 
 type AdminStats struct {
-	Users, Onboarded, Plus, Premium, Partners int
-	Revenue, Commissions                      int
+	Users, Onboarded, Trial, Plus, Premium, Partners int
+	Revenue, RevenueMonth, Commissions             int
+	PendingWithdrawals, PendingWithdrawalsSum      int
 }
 
-func (s *Store) Stats(nowRFC3339 string) (AdminStats, error) {
+// Stats — цифры для главной админки. trialSince — начало окна пробного
+// периода (сейчас − 3 дня), monthStart — начало текущего месяца (RFC3339).
+func (s *Store) Stats(nowRFC3339, trialSince, monthStart string) (AdminStats, error) {
 	var st AdminStats
 	err := s.DB.QueryRow(`
 		SELECT
 		  (SELECT COUNT(*) FROM users)::int,
 		  (SELECT COUNT(*) FROM users WHERE gender IS NOT NULL)::int,
+		  (SELECT COUNT(*) FROM users WHERE created_at > $2
+		     AND NOT (subscription_tier IN ('plus369','premium888') AND subscription_expires_at > $1))::int,
 		  (SELECT COUNT(*) FROM users WHERE subscription_tier = 'plus369' AND subscription_expires_at > $1)::int,
 		  (SELECT COUNT(*) FROM users WHERE subscription_tier = 'premium888' AND subscription_expires_at > $1)::int,
 		  (SELECT COUNT(DISTINCT referrer_commission_user_id) FROM subscription_payments WHERE commission_amount > 0)::int,
 		  (SELECT COALESCE(SUM(price_paid), 0) FROM subscription_payments)::int,
-		  (SELECT COALESCE(SUM(commission_amount), 0) FROM subscription_payments)::int
-	`, nowRFC3339).Scan(&st.Users, &st.Onboarded, &st.Plus, &st.Premium, &st.Partners, &st.Revenue, &st.Commissions)
+		  (SELECT COALESCE(SUM(price_paid), 0) FROM subscription_payments WHERE paid_at >= $3)::int,
+		  (SELECT COALESCE(SUM(commission_amount), 0) FROM subscription_payments)::int,
+		  (SELECT COUNT(*) FROM withdrawals WHERE status = 'pending')::int,
+		  (SELECT COALESCE(SUM(net), 0) FROM withdrawals WHERE status = 'pending')::int
+	`, nowRFC3339, trialSince, monthStart).Scan(&st.Users, &st.Onboarded, &st.Trial, &st.Plus, &st.Premium, &st.Partners,
+		&st.Revenue, &st.RevenueMonth, &st.Commissions, &st.PendingWithdrawals, &st.PendingWithdrawalsSum)
 	return st, err
 }
 

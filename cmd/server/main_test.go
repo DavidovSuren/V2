@@ -52,10 +52,10 @@ func TestTemplatesParse(t *testing.T) {
 	for _, page := range []string{
 		"welcome.html", "quiz.html", "home.html", "skip_confirm.html", "diary.html",
 		"progress.html", "achievements.html", "community.html", "profile.html",
-		"report.html", "wallet.html", "plans.html", "pay.html", "terms.html",
+		"report.html", "wallet.html", "plans.html", "pay.html", "terms.html", "withdraw.html",
 		"panel/admin_login.html", "panel/admin_dashboard.html", "panel/admin_questions.html",
 		"panel/admin_tasks.html", "panel/admin_task_edit.html", "panel/admin_users.html",
-		"panel/admin_user_edit.html",
+		"panel/admin_user_edit.html", "panel/admin_withdrawals.html",
 		"panel/partner_login.html", "panel/partner_dashboard.html",
 	} {
 		if tmpl[page] == nil {

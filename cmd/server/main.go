@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"version20/internal/auth"
+	"version20/internal/cardcrypt"
 	"version20/internal/content"
 	"version20/internal/cron"
 	"version20/internal/db"
@@ -96,6 +97,13 @@ func main() {
 		log.Fatalf("[server] не удалось подготовить статику: %v", err)
 	}
 
+	cardKey, err := cardcrypt.ParseKey(os.Getenv("CARD_ENC_KEY"))
+	if err != nil {
+		log.Println("[server]", err, "— вывод средств выключен.")
+	} else if cardKey == nil {
+		log.Println("[server] CARD_ENC_KEY не задан — вывод средств выключен.")
+	}
+
 	sessions := auth.NewSessions(sessionSecret)
 	sessions.Insecure = devFakeAuth
 	// Ключ админ-сессии зависит от пароля: смена ADMIN_PASSWORD разлогинивает всех.
@@ -123,6 +131,7 @@ func main() {
 		PublicURL:        publicURL,
 		MiniAppShortName: os.Getenv("MINIAPP_SHORT_NAME"),
 		TaxWithholdPct:   atoiEnv("TAX_WITHHOLD_PCT"),
+		CardKey:          cardKey,
 	}
 
 	if botToken != "" {
@@ -243,14 +252,5 @@ func loadTemplates(fsys embed.FS) map[string]*template.Template {
 }
 
 func templateFuncs() template.FuncMap {
-	return template.FuncMap{
-		"add": func(a, b int) int { return a + b },
-		"seq": func(from, to int) []int {
-			out := make([]int, 0, to-from+1)
-			for i := from; i <= to; i++ {
-				out = append(out, i)
-			}
-			return out
-		},
-	}
+	return handlers.TemplateFuncs()
 }

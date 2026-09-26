@@ -1,0 +1,59 @@
+{{define "content"}}
+{{template "admin_header" "withdrawals"}}
+<main>
+  <h1>Выводы</h1>
+  {{template "flash" .}}
+  {{with .Content}}
+  {{if not .CardKeyOK}}<div class="flash err">CARD_ENC_KEY не задан — номера карт не расшифровать, вывод в приложении выключен.</div>{{end}}
+
+  <div class="card table-wrap">
+    <h2>Ждут выплаты</h2>
+    <table>
+      <tr><th>Заявка</th><th>Кто</th><th>Карта</th><th>Начислено</th><th>НДФЛ</th><th>К выплате</th><th></th></tr>
+      {{range .Pending}}
+      <tr>
+        <td class="small">№{{.ID}}<br>{{printf "%.10s" .CreatedAt}}</td>
+        <td><a href="/admin/users/{{.UserID}}">{{.Name}}</a>{{if .Username.Valid}}<br><span class="small">@{{.Username.String}}</span>{{end}}<br><code class="small">{{.TgID}}</code></td>
+        <td><code>{{.Card}}</code></td>
+        <td>{{rub .Gross}}</td>
+        <td>{{rub .Tax}} <span class="muted small">({{.TaxPct}}%)</span></td>
+        <td><strong>{{rub .Net}}</strong></td>
+        <td class="actions">
+          <form method="POST" action="/admin/withdrawals/{{.ID}}/paid"><button class="btn" type="submit">Выплачено</button></form>
+          <form method="POST" action="/admin/withdrawals/{{.ID}}/reject" class="row">
+            <input type="text" name="reason" placeholder="Причина отказа" required>
+            <button class="btn danger" type="submit">Отклонить</button>
+          </form>
+        </td>
+      </tr>
+      {{else}}
+      <tr><td colspan="7" class="muted">Заявок нет</td></tr>
+      {{end}}
+    </table>
+  </div>
+
+  <div class="card table-wrap">
+    <div class="row">
+      <h2 style="flex:1">Обработанные за {{.Month}}</h2>
+      <form method="GET" action="/admin/withdrawals" class="row">
+        <input type="text" name="month" value="{{.Month}}" placeholder="2026-10" style="max-width:120px">
+        <button class="btn sec" type="submit">Показать</button>
+      </form>
+      <a class="btn sec" href="/admin/withdrawals.csv?month={{.Month}}">CSV для бухгалтера</a>
+    </div>
+    <table>
+      <tr><th>№</th><th>Кто</th><th>Карта</th><th>Начислено</th><th>НДФЛ</th><th>Выплачено</th><th>Статус</th></tr>
+      {{range .Processed}}
+      <tr>
+        <td>{{.ID}}</td><td>{{.Name}}</td><td>•••• {{.CardLast4}}</td>
+        <td>{{rub .Gross}}</td><td>{{rub .Tax}}</td><td>{{rub .Net}}</td>
+        <td>{{if eq .Status "paid"}}выплачено{{else}}отклонено{{if .Reason.Valid}}: {{.Reason.String}}{{end}}{{end}} <span class="muted small">{{printf "%.10s" .ProcessedAt.String}}</span></td>
+      </tr>
+      {{else}}
+      <tr><td colspan="7" class="muted">Нет</td></tr>
+      {{end}}
+    </table>
+  </div>
+  {{end}}
+</main>
+{{end}}

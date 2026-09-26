@@ -366,7 +366,7 @@ func TestPartnerPremiumReferrerBoost(t *testing.T) {
 	if len(*msgs) != 12 || (*msgs)[11] != "100: +185 ₽ в кошелёк: User 211 оформил(а) Plus" {
 		t.Errorf("сообщения бота: %d, последнее %q", len(*msgs), (*msgs)[len(*msgs)-1])
 	}
-	mustContain(t, a.get(t, "100", "/wallet").Body, "1110 ₽", "<strong>12</strong>")
+	mustContain(t, a.get(t, "100", "/wallet").Body, "1 110 ₽", `<div class="stat-value">12</div>`)
 
 	// Неизвестный тариф не создаёт оплату.
 	a.post(t, "200", "/subscribe", url.Values{"tier": {"gold"}})

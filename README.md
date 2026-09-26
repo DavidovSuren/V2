@@ -141,6 +141,9 @@ Bot API (`setChatMenuButton`) укажи этот адрес как Web App дл
 | `PUBLIC_URL` | https-адрес приложения — при старте на него ставится вебхук бота `/telegram/webhook` |
 | `MINIAPP_SHORT_NAME` | короткое имя Mini App из @BotFather (`/newapp`) — для реферальных ссылок |
 | `PAYMENTS_TEST_MODE` | `false` — в проде подписка активируется только после оплаты |
+| `CARD_ENC_KEY` | ключ шифрования номеров карт для вывода (как секрет): `openssl rand -base64 32`. Без него вывод выключен |
+| `TAX_WITHHOLD_PCT` | `13` — НДФЛ, удерживаемый при выводе |
+| `ADMIN_LOGIN`, `ADMIN_PASSWORD` | вход в веб-админку `/admin` (заявки на вывод — раздел «Выводы») |
 
 После деплоя отдельно проверь в панели Amvera поле порта приложения
 (в разделе Networking/домена) — оно должно быть `3000`, а путь health-check

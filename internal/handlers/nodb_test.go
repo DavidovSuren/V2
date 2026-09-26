@@ -241,3 +241,12 @@ func TestWelcomeDevAuthFlag(t *testing.T) {
 	a.DevFakeAuth = true
 	mustContain(t, a.do(t, "GET", "/", nil, "").Body, `data-dev-auth="1"`)
 }
+
+func TestMoneyFormat(t *testing.T) {
+	cases := map[int]string{0: "0 ₽", 500: "500 ₽", 5772: "5 772 ₽", 1234567: "1 234 567 ₽", -750: "−750 ₽"}
+	for n, want := range cases {
+		if got := Rub(n); got != want {
+			t.Errorf("Rub(%d) = %q, want %q", n, got, want)
+		}
+	}
+}
