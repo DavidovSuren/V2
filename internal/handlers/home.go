@@ -60,7 +60,7 @@ func (a *App) renderHome(w http.ResponseWriter, r *http.Request, user *models.Us
 	if data.DayNumber > 365 {
 		data.DayNumber = 365
 	}
-	if subscription.ActiveTier(user.SubscriptionTier, user.SubscriptionExpiresAt) == "" {
+	if a.paywallOn() && subscription.ActiveTier(user.SubscriptionTier, user.SubscriptionExpiresAt) == "" {
 		data.TrialDaysLeft = subscription.TrialDaysLeft(user.CreatedAt, now)
 	}
 

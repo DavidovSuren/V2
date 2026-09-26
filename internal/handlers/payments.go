@@ -58,6 +58,13 @@ func (a *App) paymentsAvailable() bool {
 	return a.Payments.ProviderToken != ""
 }
 
+// paywallOn — пробный период и доступ только с подпиской включаются, когда
+// оплата настроена (или в тест-режиме). Пока оплаты нет — приложение открыто
+// всем, иначе людей после 3 дней отправляло бы на тарифы, где нельзя заплатить.
+func (a *App) paywallOn() bool {
+	return a.Payments.TestMode || a.paymentsAvailable()
+}
+
 // WebhookSecret — secret_token вебхука: первые 32 символа hex(sha256(BOT_TOKEN)).
 func WebhookSecret(botToken string) string {
 	sum := sha256.Sum256([]byte(botToken))

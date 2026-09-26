@@ -151,7 +151,8 @@ func main() {
 		}
 	}
 
-	cron.Start(st, cron.Config{BotToken: botToken, PublicURL: publicURL})
+	cron.Start(st, cron.Config{BotToken: botToken, PublicURL: publicURL,
+		Paywall: payments.TestMode || (botToken != "" && (payments.ProviderToken != "" || payments.Currency == "XTR"))})
 
 	log.Println("Version 2.0 (Go) слушает порт " + port)
 	log.Fatal(http.ListenAndServe("0.0.0.0:"+port, app.Routes()))

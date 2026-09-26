@@ -24,7 +24,7 @@ func trialEndsTomorrow(createdAt, tier string, expiresAt sql.NullString, now tim
 }
 
 func trialEnding(s *store.Store, cfg Config, now time.Time) {
-	if cfg.BotToken == "" {
+	if cfg.BotToken == "" || !cfg.Paywall {
 		return
 	}
 	since := now.Add(-time.Duration(subscription.TrialDays+1) * 24 * time.Hour).UTC().Format(time.RFC3339)

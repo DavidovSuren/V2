@@ -109,3 +109,26 @@ func TestTermsPublic(t *testing.T) {
 	}
 	mustContain(t, r.Body, "3. Партнёрская программа", "Premium 888 ₽", "20%", "50%", "15-го", "500 ₽", "НДФЛ 13%")
 }
+
+// Пока оплата не настроена, пробный период не закрывает приложение.
+func TestNoPaywallWithoutPayments(t *testing.T) {
+	a := newDBApp(t)
+	a.Payments = PaymentConfig{}
+	a.newPlayer(t, "1", "")
+	mustNotContain(t, a.get(t, "1", "/").Body, "Пробный период")
+	a.Now = func() time.Time { return time.Now().Add(10 * 24 * time.Hour) }
+	for _, p := range closedPages {
+		if p.method != "GET" {
+			continue
+		}
+		if r := a.get(t, "1", p.path); r.Location == "/plans?expired=1" {
+			t.Errorf("%s закрыт без настроенной оплаты", p.path)
+		}
+	}
+	// С оплатой — снова три дня.
+	a.Payments = PaymentConfig{ProviderToken: "x"}
+	a.Bot = &fakeBot{}
+	if r := a.get(t, "1", "/"); r.Location != "/plans?expired=1" {
+		t.Errorf("с оплатой доступ не закрылся: %q", r.Location)
+	}
+}

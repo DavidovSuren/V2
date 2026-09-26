@@ -28,6 +28,7 @@ func mskLocation() *time.Location {
 type Config struct {
 	BotToken  string
 	PublicURL string // для кнопки «Открыть Version 2.0» в сообщениях
+	Paywall   bool   // оплата настроена: пробный период закрывает доступ
 }
 
 func Start(s *store.Store, cfg Config) {

@@ -58,6 +58,9 @@ func (a *App) requireQuizPending(next http.HandlerFunc) http.HandlerFunc {
 // hasAccess — пробный период (3 дня с регистрации) ещё идёт или есть
 // активная подписка (включая Premium за 100 уровень и промокод).
 func (a *App) hasAccess(u *models.User) bool {
+	if !a.paywallOn() {
+		return true
+	}
 	return subscription.HasAccess(u.SubscriptionTier, u.SubscriptionExpiresAt, u.CreatedAt, a.now())
 }
 
