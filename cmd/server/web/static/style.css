@@ -139,6 +139,22 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
 .list-item:last-child { border-bottom: none; }
 .list-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--tg-secondary-bg-color); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; position: relative; }
 .list-avatar .diamond-badge { position: absolute; bottom: -2px; right: -2px; font-size: 13px; }
+.plans-title { font-size: 24px; line-height: 1.2; margin-bottom: 6px; }
+.plan-card { position: relative; border: 1px solid var(--tg-hint-color); border-radius: 22px; padding: 18px; margin: 18px 0 14px; }
+.plan-card-premium { border: 1.5px solid #D4B06A; background: color-mix(in srgb, #D4B06A 6%, transparent); }
+.plan-badge { position: absolute; top: -12px; left: 18px; padding: 3px 10px; border-radius: 999px; background: #D4B06A; color: #1A1408; font-size: 12px; font-weight: 600; }
+.plan-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.plan-name { font-size: 20px; font-weight: 600; }
+.plan-price { font-size: 22px; font-weight: 600; }
+.plan-features { margin: 0 0 12px; padding-left: 18px; font-size: 14px; line-height: 1.5; }
+.btn-gold { background: #D4B06A; color: #1A1408; }
+.plans-note { text-align: center; font-size: 12px; opacity: .7; margin-top: 16px; }
+.terms h2 { font-size: 17px; margin: 20px 0 8px; }
+.terms p { line-height: 1.55; margin-bottom: 10px; }
+.terms-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 10px; }
+.terms-table th, .terms-table td { border: 1px solid color-mix(in srgb, currentColor 15%, transparent); padding: 8px; text-align: left; }
+.trial-banner { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 14px; margin-bottom: 12px; border-radius: 14px; font-size: 13px; background: color-mix(in srgb, #D4B06A 12%, transparent); border: 1px solid color-mix(in srgb, #D4B06A 35%, transparent); }
+.trial-banner a { font-weight: 600; text-decoration: none; }
 .avatar-icon { position: relative; display: inline-block; }
 .avatar-icon .diamond-badge { position: absolute; bottom: -4px; right: -6px; font-size: 0.55em; line-height: 1; }
 .list-name { font-weight: 600; font-size: 14px; }

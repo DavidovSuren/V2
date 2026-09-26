@@ -47,6 +47,8 @@ type App struct {
 	Payments         PaymentConfig
 	PublicURL        string // PUBLIC_URL — https-адрес приложения
 	MiniAppShortName string // MINIAPP_SHORT_NAME — короткое имя Mini App в @BotFather
+
+	TaxWithholdPct int // TAX_WITHHOLD_PCT — НДФЛ при выводе; 0 — по умолчанию 13
 }
 
 func (a *App) Questions() []models.Question {
@@ -126,20 +128,20 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("GET /quiz/{n}", a.requireQuizPending(a.handleQuizShow))
 	mux.HandleFunc("POST /quiz/{n}", a.requireQuizPending(a.handleQuizSubmit))
 
-	mux.HandleFunc("GET /today/skip", a.requireQuizDone(a.handleSkipConfirm))
-	mux.HandleFunc("POST /today/skip", a.requireQuizDone(a.handleSkipSubmit))
+	mux.HandleFunc("GET /today/skip", a.requireQuizDone(a.requireAccess(a.handleSkipConfirm)))
+	mux.HandleFunc("POST /today/skip", a.requireQuizDone(a.requireAccess(a.handleSkipSubmit)))
 
-	mux.HandleFunc("GET /diary", a.requireQuizDone(a.handleDiaryShow))
-	mux.HandleFunc("POST /diary", a.requireQuizDone(a.handleDiarySubmit))
+	mux.HandleFunc("GET /diary", a.requireQuizDone(a.requireAccess(a.handleDiaryShow)))
+	mux.HandleFunc("POST /diary", a.requireQuizDone(a.requireAccess(a.handleDiarySubmit)))
 
 	// Профиль/сообщество/подписка и т.п. доступны сразу после регистрации,
 	// анкета для них не обязательна (как и в Node-версии — requireUser там
 	// проверял только регистрацию, не прохождение анкеты).
-	mux.HandleFunc("GET /progress", a.requireOnboarded(a.handleProgress))
+	mux.HandleFunc("GET /progress", a.requireOnboarded(a.requireAccess(a.handleProgress)))
 	mux.HandleFunc("GET /achievements", a.requireOnboarded(a.handleAchievements))
 
-	mux.HandleFunc("GET /community", a.requireOnboarded(a.handleCommunity))
-	mux.HandleFunc("POST /friends/add", a.requireOnboarded(a.handleFriendAdd))
+	mux.HandleFunc("GET /community", a.requireOnboarded(a.requireAccess(a.handleCommunity)))
+	mux.HandleFunc("POST /friends/add", a.requireOnboarded(a.requireAccess(a.handleFriendAdd)))
 
 	mux.HandleFunc("GET /profile", a.requireOnboarded(a.handleProfile))
 	mux.HandleFunc("GET /plans", a.requireOnboarded(a.handlePlans))
@@ -147,7 +149,8 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("POST /promo", a.requireOnboarded(a.handlePromoRedeem))
 	mux.HandleFunc("POST /logout", a.requireOnboarded(a.handleLogout))
 
-	mux.HandleFunc("GET /reports/weekly", a.requireOnboarded(a.handleWeeklyReport))
+	mux.HandleFunc("GET /reports/weekly", a.requireOnboarded(a.requireAccess(a.handleWeeklyReport)))
+	mux.HandleFunc("GET /terms", a.handleTerms)
 
 	mux.HandleFunc("GET /wallet", a.requireOnboarded(a.handleWalletShow))
 	mux.HandleFunc("POST /wallet/withdraw", a.requireOnboarded(a.handleWalletWithdraw))

@@ -12,12 +12,17 @@ import (
 
 const mskLayout = "2006-01-02"
 
-func TodayMoscow() string {
+// MoscowLocation — Europe/Moscow (или UTC+3, если в образе нет tzdata).
+func MoscowLocation() *time.Location {
 	loc, err := time.LoadLocation("Europe/Moscow")
 	if err != nil {
-		loc = time.FixedZone("MSK", 3*60*60)
+		return time.FixedZone("MSK", 3*60*60)
 	}
-	return time.Now().In(loc).Format(mskLayout)
+	return loc
+}
+
+func TodayMoscow() string {
+	return time.Now().In(MoscowLocation()).Format(mskLayout)
 }
 
 func FromNDaysAgo(n int) string {

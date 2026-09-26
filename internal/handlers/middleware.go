@@ -1,6 +1,11 @@
 package handlers
 
-import "net/http"
+import (
+	"net/http"
+
+	"version20/internal/models"
+	"version20/internal/subscription"
+)
 
 // requireOnboarded — нужна сессия + пользователь уже прошёл приветствие
 // (но, возможно, ещё не анкету). Если что-то не так — на "/", он сам
@@ -48,4 +53,22 @@ func (a *App) requireQuizPending(next http.HandlerFunc) http.HandlerFunc {
 		}
 		next(w, r)
 	})
+}
+
+// hasAccess — пробный период (3 дня с регистрации) ещё идёт или есть
+// активная подписка (включая Premium за 100 уровень и промокод).
+func (a *App) hasAccess(u *models.User) bool {
+	return subscription.HasAccess(u.SubscriptionTier, u.SubscriptionExpiresAt, u.CreatedAt, a.now())
+}
+
+// requireAccess — закрывает игру после пробного периода без подписки:
+// редирект на тарифы. Профиль, тарифы, оплата, кошелёк и анкета открыты всегда.
+func (a *App) requireAccess(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !a.hasAccess(userFromCtx(r)) {
+			http.Redirect(w, r, "/plans?expired=1", http.StatusSeeOther)
+			return
+		}
+		next(w, r)
+	}
 }

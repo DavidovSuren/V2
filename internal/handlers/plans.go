@@ -2,16 +2,26 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
+	"version20/internal/payouts"
 	"version20/internal/referrals"
+	"version20/internal/reports"
 	"version20/internal/subscription"
 )
 
 type PlansData struct {
-	Tiers      []TierInfo
-	ActiveTier string
-	ActiveName string
-	Message    string
+	// State — "trial" (идёт пробный), "expired" (пробный закончился, подписки
+	// нет) или "active" (есть подписка).
+	State          string
+	TrialDaysLeft  int
+	CompletedCount int
+	ActiveTier     string
+	ActiveName     string
+	ActiveUntil    string // "24 октября"
+	Tiers          []TierInfo
+	BoostThreshold int
+	Message        string
 }
 
 var planMessages = map[string]string{
@@ -20,10 +30,37 @@ var planMessages = map[string]string{
 	"pending":   "Ждём подтверждения оплаты от Telegram — обычно это пара секунд.",
 }
 
+// plansOrder — на экране тарифов Premium первым («Выбор большинства»).
+func plansOrder() []TierInfo {
+	tiers := tierInfos()
+	for i, j := 0, len(tiers)-1; i < j; i, j = i+1, j-1 {
+		tiers[i], tiers[j] = tiers[j], tiers[i]
+	}
+	return tiers
+}
+
 func (a *App) handlePlans(w http.ResponseWriter, r *http.Request) {
 	user := userFromCtx(r)
+	now := a.now()
 	active := subscription.ActiveTier(user.SubscriptionTier, user.SubscriptionExpiresAt)
-	data := PlansData{Tiers: tierInfos(), ActiveTier: active, ActiveName: referrals.TierNames[active]}
+	data := PlansData{
+		Tiers: plansOrder(), BoostThreshold: referrals.BoostThreshold,
+		CompletedCount: user.CompletedCount,
+		ActiveTier:     active, ActiveName: referrals.TierNames[active],
+	}
+	switch {
+	case active != "":
+		data.State = "active"
+		if t, err := time.Parse(time.RFC3339, user.SubscriptionExpiresAt.String); err == nil {
+			data.ActiveUntil = payouts.HumanDate(t.In(reports.MoscowLocation()))
+		}
+	case subscription.TrialDaysLeft(user.CreatedAt, now) > 0:
+		data.State = "trial"
+		data.TrialDaysLeft = subscription.TrialDaysLeft(user.CreatedAt, now)
+	default:
+		data.State = "expired"
+	}
+
 	if r.URL.Query().Get("paid") == "1" {
 		data.Message = "Оплата прошла, подписка активна."
 		if active == "" {
@@ -34,4 +71,28 @@ func (a *App) handlePlans(w http.ResponseWriter, r *http.Request) {
 		data.Message = planMessages[r.URL.Query().Get("pay")]
 	}
 	a.render(w, "plans.html", data)
+}
+
+type TermsData struct {
+	Tiers          []TierInfo
+	BoostThreshold int
+	PayoutDay      int
+	MinAmount      int
+	TaxPct         int
+}
+
+// handleTerms — условия партнёрской программы и вывода; открыты без входа.
+func (a *App) handleTerms(w http.ResponseWriter, r *http.Request) {
+	a.render(w, "terms.html", TermsData{
+		Tiers: tierInfos(), BoostThreshold: referrals.BoostThreshold,
+		PayoutDay: payouts.PayoutDay, MinAmount: payouts.MinAmount, TaxPct: a.taxPct(),
+	})
+}
+
+// taxPct — НДФЛ, удерживаемый при выводе (TAX_WITHHOLD_PCT, по умолчанию 13).
+func (a *App) taxPct() int {
+	if a.TaxWithholdPct > 0 {
+		return a.TaxWithholdPct
+	}
+	return payouts.DefaultTaxPct
 }

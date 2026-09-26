@@ -122,6 +122,7 @@ func main() {
 		Payments:         payments,
 		PublicURL:        publicURL,
 		MiniAppShortName: os.Getenv("MINIAPP_SHORT_NAME"),
+		TaxWithholdPct:   atoiEnv("TAX_WITHHOLD_PCT"),
 	}
 
 	if botToken != "" {
@@ -141,7 +142,7 @@ func main() {
 		}
 	}
 
-	cron.Start(st, botToken)
+	cron.Start(st, cron.Config{BotToken: botToken, PublicURL: publicURL})
 
 	log.Println("Version 2.0 (Go) слушает порт " + port)
 	log.Fatal(http.ListenAndServe("0.0.0.0:"+port, app.Routes()))

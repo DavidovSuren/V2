@@ -8,6 +8,7 @@ import (
 	"version20/internal/leveling"
 	"version20/internal/models"
 	"version20/internal/reports"
+	"version20/internal/subscription"
 )
 
 type HomeData struct {
@@ -23,6 +24,7 @@ type HomeData struct {
 	Celebrate         *achievements.Meta
 	CelebrateLevel100 bool
 	Diamond           bool // уровень 100 — алмаз у иконки профиля
+	TrialDaysLeft     int  // > 0 — идёт пробный период без подписки
 }
 
 func (a *App) renderHome(w http.ResponseWriter, r *http.Request, user *models.User) {
@@ -35,6 +37,9 @@ func (a *App) renderHome(w http.ResponseWriter, r *http.Request, user *models.Us
 		CircleOffset: offset,
 		CanActToday:  !user.LastActionDate.Valid || user.LastActionDate.String != reports.TodayMoscow(),
 		Diamond:      user.Level >= 100,
+	}
+	if subscription.ActiveTier(user.SubscriptionTier, user.SubscriptionExpiresAt) == "" {
+		data.TrialDaysLeft = subscription.TrialDaysLeft(user.CreatedAt, a.now())
 	}
 
 	if focus := r.URL.Query().Get("focus"); focus != "" {

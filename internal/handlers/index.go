@@ -43,6 +43,10 @@ func (a *App) handleIndex(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/quiz/0", http.StatusSeeOther)
 		return
 	}
+	if !a.hasAccess(user) {
+		http.Redirect(w, r, "/plans?expired=1", http.StatusSeeOther)
+		return
+	}
 
 	a.renderHome(w, r, user)
 }

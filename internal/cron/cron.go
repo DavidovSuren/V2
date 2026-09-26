@@ -24,14 +24,23 @@ func mskLocation() *time.Location {
 	return loc
 }
 
-func Start(s *store.Store, botToken string) {
-	c := cron.New(cron.WithLocation(mskLocation()))
+// Config — то, что нужно фоновым задачам от окружения.
+type Config struct {
+	BotToken  string
+	PublicURL string // для кнопки «Открыть Version 2.0» в сообщениях
+}
 
+func Start(s *store.Store, cfg Config) {
+	c := cron.New(cron.WithLocation(mskLocation()))
+	botToken := cfg.BotToken
+
+	c.AddFunc("0 12 * * *", func() { trialEnding(s, cfg, time.Now()) })
 	c.AddFunc("15 15 * * *", func() { dailyReminder(s, botToken) })
 	c.AddFunc("0 10 * * 1", func() { weeklyReport(s, botToken) })
 	c.AddFunc("0 11 1 * *", func() { monthlyReport(s, botToken) })
 
 	c.Start()
+	log.Println("[cron] trialEnding запланирован на 12:00 Europe/Moscow")
 	log.Println("[cron] dailyReminder запланирован на 15:15 Europe/Moscow")
 	log.Println("[cron] weeklyReport запланирован на понедельник 10:00 Europe/Moscow")
 	log.Println("[cron] monthlyReport запланирован на 1-е число 11:00 Europe/Moscow")

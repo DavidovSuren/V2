@@ -174,3 +174,34 @@ func (s *Store) AllQuizzedUsers() ([]struct {
 	}
 	return out, rows.Err()
 }
+
+type RecentUser struct {
+	ID        int64
+	TgID      string
+	CreatedAt string
+	Tier      string
+	ExpiresAt sql.NullString
+}
+
+// UsersRegisteredSince — пользователи, зарегистрированные не раньше since
+// (RFC3339 UTC; created_at хранится в том же формате, сравнение строковое).
+func (s *Store) UsersRegisteredSince(since string) ([]RecentUser, error) {
+	rows, err := s.DB.Query(`
+		SELECT id, tg_id, created_at, subscription_tier, subscription_expires_at
+		FROM users WHERE created_at >= $1
+	`, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []RecentUser
+	for rows.Next() {
+		var u RecentUser
+		if err := rows.Scan(&u.ID, &u.TgID, &u.CreatedAt, &u.Tier, &u.ExpiresAt); err != nil {
+			return nil, err
+		}
+		out = append(out, u)
+	}
+	return out, rows.Err()
+}

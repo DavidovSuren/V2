@@ -95,7 +95,7 @@ func (a *App) handleOnboardingSubmit(w http.ResponseWriter, r *http.Request) {
 		Name:               name,
 		AgeGroup:           ageGroup,
 		PhotosJSON:         string(photosJSON),
-		CreatedAt:          time.Now().UTC().Format(time.RFC3339),
+		CreatedAt:          a.now().UTC().Format(time.RFC3339),
 		ReferralCode:       referralCode,
 		ReferredByUserID:   referredBy,
 		ReferredByCodeType: referredByType,
