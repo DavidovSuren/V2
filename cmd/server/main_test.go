@@ -50,7 +50,7 @@ func TestTaskBanks(t *testing.T) {
 func TestTemplatesParse(t *testing.T) {
 	tmpl := loadTemplates(templatesFS)
 	for _, page := range []string{
-		"welcome.html", "quiz.html", "home.html", "skip_confirm.html", "diary.html",
+		"welcome.html", "quiz.html", "home.html", "skip_confirm.html", "diary.html", "done.html",
 		"progress.html", "community.html", "profile.html",
 		"report.html", "wallet.html", "plans.html", "pay.html", "terms.html", "terms_update.html", "withdraw.html",
 		"panel/admin_login.html", "panel/admin_dashboard.html", "panel/admin_questions.html",

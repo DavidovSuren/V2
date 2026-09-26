@@ -156,7 +156,7 @@ func TestDiaryCompletesTask(t *testing.T) {
 	}
 
 	r := a.post(t, "1", "/diary", url.Values{"emoji": {"4"}, "note": {"сделал"}})
-	if r.Location != "/?celebrate=first" {
+	if r.Location != "/?done=1&celebrate=first" {
 		t.Fatalf("diary: %d %q", r.Code, r.Location)
 	}
 	u = a.user(t, "1")
@@ -199,7 +199,7 @@ func TestStreakXPAndAchievement(t *testing.T) {
 	a.exec(t, "UPDATE users SET streak_current=6, streak_best=6, last_action_date=$1, completed_count=6, day_index=6 WHERE id=$2", yesterday, u.ID)
 
 	r := a.post(t, "1", "/diary", url.Values{"emoji": {"3"}})
-	if r.Location != "/?celebrate=7d" {
+	if r.Location != "/?done=1&celebrate=7d" {
 		t.Errorf("редирект: %q", r.Location)
 	}
 	u = a.user(t, "1")
@@ -260,7 +260,7 @@ func TestLevel100GrantsDiamondAndPremium(t *testing.T) {
 	a.exec(t, "UPDATE users SET completed_count=364, day_index=364, level=99 WHERE id=$1", u.ID)
 
 	r := a.post(t, "1", "/diary", url.Values{"emoji": {"5"}})
-	if r.Location != "/?celebrate=level100" {
+	if r.Location != "/?done=1&celebrate=level100" {
 		t.Errorf("редирект: %q", r.Location)
 	}
 	u = a.user(t, "1")
@@ -762,4 +762,27 @@ func TestQuizScreen(t *testing.T) {
 	text := a.get(t, "1", "/quiz/17").Body
 	mustContain(t, text, ">Далее<")
 	mustNotContain(t, text, "data-autosubmit")
+}
+
+// Экран «Задание выполнено»: показывает то, что реально будет начислено.
+func TestDoneScreen(t *testing.T) {
+	a := newDBApp(t)
+	u := a.newPlayer(t, "1", "")
+	a.exec(t, "UPDATE users SET streak_current=6, last_action_date=$1, completed_count=6, day_index=6 WHERE id=$2", reports.FromNDaysAgo(1), u.ID)
+
+	done := a.get(t, "1", "/diary").Body
+	mustContain(t, done, "День 7 закрыт", "+15 опыта", "7 дней подряд", "Как ощущения?",
+		"Тяжело", "Так себе", "Норм", "Хорошо", "Огонь", `name="note"`, "Сохранить", "Поделиться", "data-tg-link")
+	mustNotContain(t, done, "😔", "🔥")
+
+	r := a.post(t, "1", "/diary", url.Values{"emoji": {"4"}})
+	if u := a.user(t, "1"); u.XP != 50+15 || u.StreakCurrent != 7 {
+		t.Errorf("начислено не то, что показано: xp=%d streak=%d", u.XP, u.StreakCurrent)
+	}
+	home := a.do(t, "GET", r.Location, nil, "", a.session("1")).Body
+	mustContain(t, home, "data-confetti", "/static/confetti.js", `id="modal-celebrate"`)
+	mustNotContain(t, a.get(t, "1", "/").Body, "data-confetti")
+
+	// После отметки /diary — дневник, а не повторное закрытие дня.
+	mustContain(t, a.get(t, "1", "/diary").Body, "Сегодня уже отмечено", "Настроение за месяц")
 }

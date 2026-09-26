@@ -1,0 +1,27 @@
+{{define "content"}}
+<div class="done">
+  <div class="done-sparks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="done-big">{{template "icon" "check"}}</div>
+  <h1 class="done-title">День {{.DayNumber}} закрыт</h1>
+  <div class="done-pills">
+    <span class="pill pill-gold">+{{.XPGain}} опыта</span>
+    <span class="pill pill-flame">{{.Streak}} {{if eq .Streak 1}}день{{else}}дней{{end}} подряд</span>
+  </div>
+
+  <form method="POST" action="/diary" class="done-form">
+    <div class="card">
+      <div style="font-size:15px;font-weight:500;margin-bottom:14px">Как ощущения?</div>
+      <div class="mood-row">
+        {{range .Moods}}
+        <label class="mood"><input type="radio" name="emoji" value="{{.Value}}" required><span>{{.Label}}</span></label>
+        {{end}}
+      </div>
+      <input type="text" name="note" class="note-input" placeholder="Заметка для себя, если хочется" autocomplete="off">
+    </div>
+
+    <div class="spacer"></div>
+    <button class="btn btn-primary" type="submit">Сохранить</button>
+    {{if .ShareURL}}<a class="btn btn-secondary mt-8" href="{{.ShareURL}}" data-tg-link>{{template "icon" "share"}}Поделиться</a>{{end}}
+  </form>
+</div>
+{{end}}

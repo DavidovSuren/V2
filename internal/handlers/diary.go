@@ -14,8 +14,37 @@ type DiaryPageData struct {
 	MoodTrend []reports.MoodPoint
 }
 
+// DonePageData — экран «Задание выполнено» (макет 03): то, что будет
+// начислено при сохранении, считается так же, как в handleDiarySubmit.
+type DonePageData struct {
+	DayNumber int
+	XPGain    int
+	Streak    int
+	Moods     []MoodOption
+	ShareURL  string
+}
+
+type MoodOption struct{ Value, Label string }
+
+var moodOptions = []MoodOption{{"1", "Тяжело"}, {"2", "Так себе"}, {"3", "Норм"}, {"4", "Хорошо"}, {"5", "Огонь"}}
+
+// handleDiaryShow — «Сделал» ведёт сюда: экран закрытия дня. Если сегодня
+// действие уже отмечено — дневник с динамикой настроения.
 func (a *App) handleDiaryShow(w http.ResponseWriter, r *http.Request) {
 	user := userFromCtx(r)
+	today := reports.TodayMoscow()
+	if user.DayIndex < 365 && !(user.LastActionDate.Valid && user.LastActionDate.String == today) {
+		streak := 1
+		if isYesterday(user.LastActionDate, today) {
+			streak = user.StreakCurrent + 1
+		}
+		a.render(w, "done.html", DonePageData{
+			DayNumber: user.CompletedCount + 1, XPGain: leveling.XPForTaskCompletion(streak), Streak: streak,
+			Moods: moodOptions, ShareURL: shareURL(a.referralLink(user.ReferralCode.String)),
+		})
+		return
+	}
+
 	from := reports.FromNDaysAgo(29)
 	moodRows, _ := a.Store.MoodRows(user.ID, from)
 
@@ -119,17 +148,18 @@ func (a *App) handleDiarySubmit(w http.ResponseWriter, r *http.Request) {
 	updatedUser, err := a.Store.GetUserByID(user.ID)
 	if err == nil && updatedUser != nil {
 		unlocked, _ := achievements.CheckAndUnlock(a.Store, updatedUser)
-		redirectURL := "/"
+		// ?done=1 — конфетти и вибрация на главной (этап 10), плюс окно награды.
+		redirectURL := "/?done=1"
 		if reachedLevel100 {
-			redirectURL = "/?celebrate=level100"
+			redirectURL += "&celebrate=level100"
 		} else if len(unlocked) > 0 {
-			redirectURL = "/?celebrate=" + unlocked[len(unlocked)-1]
+			redirectURL += "&celebrate=" + unlocked[len(unlocked)-1]
 		}
 		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/?done=1", http.StatusSeeOther)
 }
 
 func isYesterday(lastActionDate sql.NullString, today string) bool {

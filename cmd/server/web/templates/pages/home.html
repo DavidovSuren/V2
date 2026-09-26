@@ -85,5 +85,10 @@
 </dialog>
 {{end}}
 
+{{if .JustDone}}
+<div class="confetti" data-confetti aria-hidden="true"></div>
+<script src="/static/confetti.js" defer></script>
+{{end}}
+
 {{template "nav" "home"}}
 {{end}}
