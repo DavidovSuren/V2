@@ -206,3 +206,23 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
 .money-gold { color: #B08A43; font-size: 20px; }
 .notice-ok { padding: 10px 12px; border-radius: 12px; margin-bottom: 12px; font-size: 13px; background: color-mix(in srgb, #8FD1B4 14%, transparent); }
 .field-error { color: #A3441C; font-size: 13px; margin-top: 4px; }
+
+/* Приветствие и соглашение (этап 5) */
+.welcome-logo { width: 56px; height: 56px; border-radius: 18px; border: 1px solid color-mix(in srgb, #D4B06A 45%, transparent); display: flex; align-items: center; justify-content: center; color: #D4B06A; font-size: 22px; font-weight: 600; margin-bottom: 14px; }
+.welcome-title { font-size: 30px; line-height: 1.15; }
+.hint { font-size: 12px; opacity: .7; margin-top: 4px; }
+.age-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.age-opt { position: relative; }
+.age-opt input { position: absolute; opacity: 0; inset: 0; }
+.age-opt span { display: flex; align-items: center; justify-content: center; height: 48px; border-radius: 14px; border: 1px solid color-mix(in srgb, currentColor 15%, transparent); font-size: 15px; cursor: pointer; }
+.age-opt input:checked + span { border-color: #D4B06A; background: color-mix(in srgb, #D4B06A 12%, transparent); color: #B08A43; }
+.age-opt input:focus-visible + span { outline: 2px solid #D4B06A; }
+.terms-check { display: flex; gap: 12px; align-items: flex-start; font-size: 13px; line-height: 1.5; margin: 18px 0 12px; }
+.terms-check input { width: 22px; height: 22px; flex-shrink: 0; accent-color: #D4B06A; }
+.trial-note { font-size: 13px; opacity: .75; margin-bottom: 12px; }
+.btn:disabled { opacity: .5; }
+.terms ul { padding-left: 18px; line-height: 1.55; margin-bottom: 10px; }
+.invite-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; margin-top: 16px; border-radius: 16px; background: color-mix(in srgb, #D4B06A 10%, transparent); border: 1px solid color-mix(in srgb, #D4B06A 28%, transparent); }
+.invite-title { font-weight: 600; color: #B08A43; }
+.btn-gold-sm { display: inline-flex; align-items: center; height: 38px; padding: 0 14px; border-radius: 12px; background: #D4B06A; color: #1A1408; font-weight: 600; text-decoration: none; }
+.btn-link { font-size: 13px; text-decoration: none; }

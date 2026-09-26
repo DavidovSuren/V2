@@ -12,14 +12,14 @@ var ErrNotFound = sql.ErrNoRows
 const userColumns = `id, tg_id, username, name, gender, age_group, photos_json, created_at,
 	level, xp, completed_count, streak_current, streak_best, day_index, last_action_date,
 	subscription_tier, subscription_expires_at, referral_code, premium_agent_code,
-	referred_by_user_id, referred_by_code_type`
+	referred_by_user_id, referred_by_code_type, terms_version`
 
 func scanUser(row *sql.Row) (*models.User, error) {
 	var u models.User
 	err := row.Scan(&u.ID, &u.TgID, &u.Username, &u.Name, &u.Gender, &u.AgeGroup, &u.PhotosJSON, &u.CreatedAt,
 		&u.Level, &u.XP, &u.CompletedCount, &u.StreakCurrent, &u.StreakBest, &u.DayIndex, &u.LastActionDate,
 		&u.SubscriptionTier, &u.SubscriptionExpiresAt, &u.ReferralCode, &u.PremiumAgentCode,
-		&u.ReferredByUserID, &u.ReferredByCodeType)
+		&u.ReferredByUserID, &u.ReferredByCodeType, &u.TermsVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -95,18 +95,26 @@ type NewUser struct {
 	ReferralCode       string
 	ReferredByUserID   sql.NullInt64
 	ReferredByCodeType sql.NullString
+	TermsVersion       string
 }
 
 func (s *Store) CreateUser(u NewUser) (int64, error) {
 	var id int64
 	err := s.DB.QueryRow(`
 		INSERT INTO users (tg_id, username, name, age_group, photos_json, created_at,
-		                    referral_code, referred_by_user_id, referred_by_code_type)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		                    referral_code, referred_by_user_id, referred_by_code_type,
+		                    terms_accepted_at, terms_version)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $6, NULLIF($10, ''))
 		RETURNING id
 	`, u.TgID, u.Username, u.Name, u.AgeGroup, u.PhotosJSON, u.CreatedAt,
-		u.ReferralCode, u.ReferredByUserID, u.ReferredByCodeType).Scan(&id)
+		u.ReferralCode, u.ReferredByUserID, u.ReferredByCodeType, u.TermsVersion).Scan(&id)
 	return id, err
+}
+
+// AcceptTerms — пользователь принял редакцию соглашения version.
+func (s *Store) AcceptTerms(userID int64, version, at string) error {
+	_, err := s.DB.Exec(`UPDATE users SET terms_version = $1, terms_accepted_at = $2 WHERE id = $3`, version, at, userID)
+	return err
 }
 
 func (s *Store) SetPremiumAgentCode(userID int64, code string) error {

@@ -107,5 +107,5 @@ func TestTermsPublic(t *testing.T) {
 	if r.Code != http.StatusOK {
 		t.Fatalf("/terms без входа: %d", r.Code)
 	}
-	mustContain(t, r.Body, "Условия партнёрской программы", "Premium 888 ₽", "20%", "50%", "15-го", "500 ₽", "НДФЛ 13%")
+	mustContain(t, r.Body, "3. Партнёрская программа", "Premium 888 ₽", "20%", "50%", "15-го", "500 ₽", "НДФЛ 13%")
 }

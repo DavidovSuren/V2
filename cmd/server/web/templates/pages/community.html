@@ -49,5 +49,14 @@
   {{end}}
 </div>
 
+<div class="invite-card">
+  <div style="flex:1">
+    <div class="invite-title">Пригласи и зарабатывай</div>
+    <div class="subtitle" style="margin:0">До 50% с каждой подписки друга</div>
+  </div>
+  {{if .ShareURL}}<a class="btn-gold-sm" href="{{.ShareURL}}" data-tg-link>Позвать</a>{{end}}
+  <a class="btn-link" href="/wallet">Кошелёк</a>
+</div>
+
 {{template "nav" "community"}}
 {{end}}

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"database/sql"
-	"encoding/json"
 	"net/http"
 	"strings"
 	"time"
@@ -13,14 +12,11 @@ import (
 
 // handleOnboardingSubmit — экран "Приветствие". Порт backend/routes/onboarding.js (POST /onboarding).
 func (a *App) handleOnboardingSubmit(w http.ResponseWriter, r *http.Request) {
-	_ = r.ParseMultipartForm(2 << 20) // фото — тот же стаб, что в исходном MVP: не сохраняются, важно лишь количество
+	_ = r.ParseMultipartForm(1 << 20)
 	name := strings.TrimSpace(r.FormValue("name"))
 	ageGroup := r.FormValue("ageGroup")
 	refCode := strings.TrimSpace(r.FormValue("refCode"))
-	photoCount := 0
-	if r.MultipartForm != nil {
-		photoCount = len(r.MultipartForm.File["photos"])
-	}
+	termsOK := r.FormValue("terms") != ""
 
 	// Без сессии (страница открыта не из Telegram) раньше был молчаливый
 	// редирект на "/" — форма просто очищалась, и казалось, что ничего не работает.
@@ -34,9 +30,14 @@ func (a *App) handleOnboardingSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if name == "" || ageGroup == "" || photoCount == 0 {
+	if name == "" || ageGroup == "" {
 		a.render(w, "welcome.html", WelcomeData{RefCode: refCode, Name: name, AgeGroup: ageGroup,
-			Error: "Заполни имя, возрастную группу и загрузи хотя бы одно фото"})
+			Error: "Напиши, как к тебе обращаться, и выбери возраст"})
+		return
+	}
+	if !termsOK {
+		a.render(w, "welcome.html", WelcomeData{RefCode: refCode, Name: name, AgeGroup: ageGroup,
+			Error: "Прими соглашение, чтобы начать"})
 		return
 	}
 
@@ -46,10 +47,15 @@ func (a *App) handleOnboardingSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	photosJSON, _ := json.Marshal(placeholderPhotos(photoCount))
+	// Фото больше не загружаются; колонка photos_json остаётся для старых данных.
+	photosJSON := "[]"
 
 	if existing != nil {
-		if err := a.Store.UpdateProfile(existing.ID, name, ageGroup, string(photosJSON)); err != nil {
+		if err := a.Store.UpdateProfile(existing.ID, name, ageGroup, photosJSON); err != nil {
+			a.serverError(w, err)
+			return
+		}
+		if err := a.Store.AcceptTerms(existing.ID, TermsVersion, a.now().UTC().Format(time.RFC3339)); err != nil {
 			a.serverError(w, err)
 			return
 		}
@@ -94,7 +100,8 @@ func (a *App) handleOnboardingSubmit(w http.ResponseWriter, r *http.Request) {
 		Username:           username,
 		Name:               name,
 		AgeGroup:           ageGroup,
-		PhotosJSON:         string(photosJSON),
+		PhotosJSON:         photosJSON,
+		TermsVersion:       TermsVersion,
 		CreatedAt:          a.now().UTC().Format(time.RFC3339),
 		ReferralCode:       referralCode,
 		ReferredByUserID:   referredBy,
@@ -111,14 +118,4 @@ func (a *App) handleOnboardingSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/quiz/0", http.StatusSeeOther)
-}
-
-// placeholderPhotos — реальная загрузка/хранение фото не реализована (как
-// и в исходном MVP), но UX ждёт "минимум 1 фото" — фиксируем только количество.
-func placeholderPhotos(n int) []string {
-	out := make([]string, n)
-	for i := range out {
-		out[i] = "local-photo"
-	}
-	return out
 }

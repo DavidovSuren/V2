@@ -1,0 +1,15 @@
+{{define "content"}}
+<div class="welcome">
+  <h1>Мы обновили соглашение</h1>
+  <p class="subtitle">Редакция от {{.Version}}. Прочитай, что изменилось, и подтверди, чтобы продолжить.</p>
+  <p><a href="/terms">Открыть пользовательское соглашение</a></p>
+  <form method="POST" action="/terms/accept" data-terms-form>
+    <label class="terms-check">
+      <input type="checkbox" name="terms" value="1" required data-terms-check>
+      <span>Я принимаю <a href="/terms">пользовательское соглашение</a> и даю согласие на обработку персональных данных</span>
+    </label>
+    <button class="btn btn-primary mt-16" type="submit" data-terms-submit>Продолжить</button>
+  </form>
+</div>
+<script src="/static/welcome.js" defer></script>
+{{end}}

@@ -191,7 +191,7 @@ func (a *App) post(t *testing.T, tgID, target string, form url.Values) resp {
 		"application/x-www-form-urlencoded", a.session(tgID))
 }
 
-// onboard проходит приветственный экран (имя, возраст, 1 фото, реф. код).
+// onboard проходит приветственный экран (имя, возраст, согласие, реф. код).
 func (a *App) onboard(t *testing.T, tgID, refCode string, extra ...*http.Cookie) resp {
 	t.Helper()
 	var buf bytes.Buffer
@@ -199,8 +199,7 @@ func (a *App) onboard(t *testing.T, tgID, refCode string, extra ...*http.Cookie)
 	mw.WriteField("name", "User "+tgID)
 	mw.WriteField("ageGroup", "25-34")
 	mw.WriteField("refCode", refCode)
-	fw, _ := mw.CreateFormFile("photos", "me.jpg")
-	fw.Write([]byte("jpeg"))
+	mw.WriteField("terms", "1")
 	mw.Close()
 	cookies := append([]*http.Cookie{a.session(tgID)}, extra...)
 	return a.do(t, http.MethodPost, "/onboarding", &buf, mw.FormDataContentType(), cookies...)

@@ -31,6 +31,8 @@ type User struct {
 	PremiumAgentCode   sql.NullString
 	ReferredByUserID   sql.NullInt64
 	ReferredByCodeType sql.NullString
+
+	TermsVersion sql.NullString // редакция принятого соглашения
 }
 
 func (u *User) HasPremiumAgentCode() bool {

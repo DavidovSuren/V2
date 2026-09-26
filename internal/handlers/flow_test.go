@@ -18,12 +18,16 @@ import (
 
 func TestOnboardingRequiresFields(t *testing.T) {
 	a := newDBApp(t)
-	r := a.post(t, "1", "/onboarding", url.Values{"name": {"A"}, "ageGroup": {"18-24"}})
-	if r.Code != 200 || !strings.Contains(r.Body, "загрузи хотя бы одно фото") {
-		t.Fatalf("без фото: %d", r.Code)
+	r := a.post(t, "1", "/onboarding", url.Values{"name": {"A"}, "terms": {"1"}})
+	if r.Code != 200 || !strings.Contains(r.Body, "выбери возраст") {
+		t.Fatalf("без возраста: %d", r.Code)
+	}
+	r = a.post(t, "1", "/onboarding", url.Values{"name": {"A"}, "ageGroup": {"21-25"}})
+	if r.Code != 200 || !strings.Contains(r.Body, "Прими соглашение, чтобы начать") {
+		t.Fatalf("без согласия: %d", r.Code)
 	}
 	if u, _ := a.Store.GetUserByTgID("1"); u != nil {
-		t.Fatal("пользователь создан без фото")
+		t.Fatal("пользователь создан без согласия")
 	}
 }
 
@@ -36,7 +40,7 @@ func TestOnboardingCreatesUserAndReferral(t *testing.T) {
 	if !referrer.ReferralCode.Valid || len(referrer.ReferralCode.String) != 7 {
 		t.Errorf("реф. код: %v", referrer.ReferralCode)
 	}
-	if referrer.Name != "User 1" || referrer.AgeGroup != "25-34" || referrer.PhotosJSON != `["local-photo"]` {
+	if referrer.Name != "User 1" || referrer.AgeGroup != "25-34" || referrer.PhotosJSON != `[]` {
 		t.Errorf("профиль: %+v", referrer)
 	}
 

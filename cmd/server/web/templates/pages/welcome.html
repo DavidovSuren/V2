@@ -1,35 +1,37 @@
 {{define "content"}}
 {{if .NeedBootstrap}}<div id="bootstrap-target"{{if .DevAuth}} data-dev-auth="1"{{end}}></div>{{end}}
-<h1>Добро пожаловать в Version 2.0</h1>
-<p class="subtitle">Персональная игра по превращению себя в лучшую версию за 365 дней. Твой путь начинается здесь.</p>
+<div class="welcome">
+  <div class="welcome-logo">2.0</div>
+  <h1 class="welcome-title">Новая версия себя за 365 дней</h1>
+  <p class="subtitle">Одно действие в день. План под тебя по 8 направлениям жизни.</p>
 
-{{if .Error}}<div class="toast">{{.Error}}</div>{{end}}
+  {{if .Error}}<div class="toast">{{.Error}}</div>{{end}}
 
-<form method="POST" action="/onboarding" enctype="multipart/form-data">
-  <div class="input-group">
-    <label>Как тебя называть?</label>
-    <input type="text" name="name" value="{{.Name}}" required>
-  </div>
-
-  <div class="input-group">
-    <label>Возрастная группа</label>
-    <div class="options">
-      <label class="option"><input type="radio" name="ageGroup" value="17-20"{{if eq $.AgeGroup "17-20"}} checked{{end}} required> 17–20</label>
-      <label class="option"><input type="radio" name="ageGroup" value="21-25"{{if eq $.AgeGroup "21-25"}} checked{{end}}> 21–25</label>
-      <label class="option"><input type="radio" name="ageGroup" value="26-30"{{if eq $.AgeGroup "26-30"}} checked{{end}}> 26–30</label>
-      <label class="option"><input type="radio" name="ageGroup" value="31-35"{{if eq $.AgeGroup "31-35"}} checked{{end}}> 31–35</label>
-      <label class="option"><input type="radio" name="ageGroup" value="36-45"{{if eq $.AgeGroup "36-45"}} checked{{end}}> 36–45</label>
-      <label class="option"><input type="radio" name="ageGroup" value="45+"{{if eq $.AgeGroup "45+"}} checked{{end}}> 45+</label>
+  <form method="POST" action="/onboarding" data-terms-form>
+    <div class="input-group">
+      <label for="name">Как к тебе обращаться</label>
+      <input id="name" type="text" name="name" value="{{.Name}}" autocomplete="given-name" required>
+      {{if .Name}}<div class="hint">Взяли из Telegram — можно поменять</div>{{end}}
     </div>
-  </div>
 
-  <div class="input-group">
-    <label>Загрузи хотя бы одно фото (лицо, полный рост, обычная одежда)</label>
-    <input type="file" name="photos" accept="image/*" multiple required>
-  </div>
+    <div class="input-group">
+      <label>Возраст</label>
+      <div class="age-grid">
+        {{range $v := .AgeGroups}}
+        <label class="age-opt"><input type="radio" name="ageGroup" value="{{$v.Value}}"{{if eq $.AgeGroup $v.Value}} checked{{end}} required><span>{{$v.Label}}</span></label>
+        {{end}}
+      </div>
+    </div>
 
-  <input type="hidden" name="refCode" value="{{.RefCode}}">
+    <input type="hidden" name="refCode" value="{{.RefCode}}">
 
-  <button class="btn btn-primary mt-16" type="submit">Продолжить</button>
-</form>
+    <label class="terms-check">
+      <input type="checkbox" name="terms" value="1" required data-terms-check>
+      <span>Я принимаю <a href="/terms">пользовательское соглашение</a> и даю согласие на обработку персональных данных</span>
+    </label>
+    <div class="trial-note">3 дня бесплатно. Без привязки карты.</div>
+    <button class="btn btn-primary" type="submit" data-terms-submit>Начать — 21 вопрос, 3 минуты</button>
+  </form>
+</div>
+<script src="/static/welcome.js" defer></script>
 {{end}}

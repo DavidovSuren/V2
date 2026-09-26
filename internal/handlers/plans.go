@@ -73,22 +73,6 @@ func (a *App) handlePlans(w http.ResponseWriter, r *http.Request) {
 	a.render(w, "plans.html", data)
 }
 
-type TermsData struct {
-	Tiers          []TierInfo
-	BoostThreshold int
-	PayoutDay      int
-	MinAmount      int
-	TaxPct         int
-}
-
-// handleTerms — условия партнёрской программы и вывода; открыты без входа.
-func (a *App) handleTerms(w http.ResponseWriter, r *http.Request) {
-	a.render(w, "terms.html", TermsData{
-		Tiers: tierInfos(), BoostThreshold: referrals.BoostThreshold,
-		PayoutDay: payouts.PayoutDay, MinAmount: payouts.MinAmount, TaxPct: a.taxPct(),
-	})
-}
-
 // taxPct — НДФЛ, удерживаемый при выводе (TAX_WITHHOLD_PCT, по умолчанию 13).
 func (a *App) taxPct() int {
 	if a.TaxWithholdPct > 0 {

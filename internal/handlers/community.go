@@ -18,6 +18,7 @@ type CommunityData struct {
 	AddFriendErr string
 	MeID         int64
 	HiddenCount  int // сколько участников скрыто от не-Premium
+	ShareURL     string
 }
 
 // handleCommunity — раздел "Сообщество". Виден всем, но уровень/бейджи/
@@ -27,7 +28,8 @@ func (a *App) handleCommunity(w http.ResponseWriter, r *http.Request) {
 	tab := r.URL.Query().Get("tab")
 	premium := subscription.IsPremiumActive(user.SubscriptionTier, user.SubscriptionExpiresAt)
 
-	data := CommunityData{Tab: tab, PremiumView: premium, MeID: user.ID, AddFriendErr: friendAddErrors[r.URL.Query().Get("err")]}
+	data := CommunityData{Tab: tab, PremiumView: premium, MeID: user.ID, AddFriendErr: friendAddErrors[r.URL.Query().Get("err")],
+		ShareURL: shareURL(a.referralLink(user.ReferralCode.String))}
 
 	if tab == "friends" {
 		if !premium {

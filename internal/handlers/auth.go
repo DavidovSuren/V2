@@ -3,6 +3,7 @@ package handlers
 import (
 	"io"
 	"net/http"
+	"net/url"
 
 	"version20/internal/telegram"
 )
@@ -10,6 +11,7 @@ import (
 const (
 	refCookieName      = "v2_ref"
 	usernameCookieName = "v2_username"
+	firstNameCookie    = "v2_first_name"
 )
 
 // handleAuthBootstrap — единственный fetch() во всём приложении: bootstrap.js
@@ -25,6 +27,12 @@ func (a *App) handleAuthBootstrap(w http.ResponseWriter, r *http.Request) {
 
 	if identity, ok := telegram.VerifyInitData(initData, a.BotToken); ok {
 		a.Sessions.SetCookie(w, identity.ID)
+		if identity.Name != "" {
+			http.SetCookie(w, &http.Cookie{
+				Name: firstNameCookie, Value: url.QueryEscape(identity.Name), Path: "/",
+				MaxAge: 3600, HttpOnly: true, SameSite: http.SameSiteLaxMode,
+			})
+		}
 		if err := a.syncUsername(w, identity); err != nil {
 			a.serverError(w, err)
 			return
@@ -76,4 +84,17 @@ func (a *App) syncUsername(w http.ResponseWriter, identity *telegram.Identity) e
 		return a.Store.UpdateUsername(user.ID, identity.Username)
 	}
 	return nil
+}
+
+// firstNameFromCookie — имя из Telegram для подстановки в форму приветствия.
+func firstNameFromCookie(r *http.Request) string {
+	c, err := r.Cookie(firstNameCookie)
+	if err != nil {
+		return ""
+	}
+	name, err := url.QueryUnescape(c.Value)
+	if err != nil || name == "Друг" {
+		return ""
+	}
+	return name
 }

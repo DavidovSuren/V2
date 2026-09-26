@@ -36,7 +36,11 @@ func (a *App) handleIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if user == nil {
-		a.render(w, "welcome.html", WelcomeData{RefCode: refCodeFromCookie(r)})
+		a.render(w, "welcome.html", WelcomeData{RefCode: refCodeFromCookie(r), Name: firstNameFromCookie(r)})
+		return
+	}
+	if needsTerms(user) {
+		a.renderTermsUpdate(w)
 		return
 	}
 	if !user.Gender.Valid {
@@ -60,4 +64,14 @@ func refCodeFromCookie(r *http.Request) string {
 		return ""
 	}
 	return c.Value
+}
+
+type AgeOption struct{ Value, Label string }
+
+// AgeGroups — сетка 3×2 на экране приветствия (значения — как в Node-версии).
+func (WelcomeData) AgeGroups() []AgeOption {
+	return []AgeOption{
+		{"17-20", "17–20"}, {"21-25", "21–25"}, {"26-30", "26–30"},
+		{"31-35", "31–35"}, {"36-45", "36–45"}, {"45+", "45+"},
+	}
 }
