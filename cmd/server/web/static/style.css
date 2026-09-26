@@ -380,3 +380,7 @@ a.banner-gold { text-decoration: none; }
   to { transform: translate(var(--drift, 0), 105vh) rotate(var(--spin, 180deg)); opacity: .2; }
 }
 @media (prefers-reduced-motion: reduce) { .confetti { display: none; } }
+
+/* ---- Этап 11: напоминание ---- */
+.time-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.time-grid .age-opt span { height: 44px; font-size: 14px; }

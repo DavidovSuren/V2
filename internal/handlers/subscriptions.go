@@ -9,6 +9,7 @@ import (
 
 	"version20/internal/leveling"
 	"version20/internal/referrals"
+	"version20/internal/reminders"
 	"version20/internal/store"
 	"version20/internal/subscription"
 )
@@ -49,7 +50,7 @@ func (a *App) handleProfile(w http.ResponseWriter, r *http.Request) {
 
 	data := ProfileData{
 		Name: user.Name, Initial: initial(user.Name), Diamond: level >= 100,
-		Theme: themePref(r), RemindAt: defaultRemindAt,
+		Theme: themePref(r), RemindAt: reminders.Effective(user.RemindAt.String),
 		PromoError: r.URL.Query().Get("promo_err"), Support: SupportContact,
 	}
 	if active := subscription.ActiveTier(user.SubscriptionTier, user.SubscriptionExpiresAt); active != "" {
@@ -69,9 +70,6 @@ func (a *App) handleProfile(w http.ResponseWriter, r *http.Request) {
 
 	a.render(w, "profile.html", data)
 }
-
-// defaultRemindAt — время ежедневного напоминания по умолчанию (МСК).
-const defaultRemindAt = "15:15"
 
 var errUnknownTier = errors.New("неизвестный тариф")
 

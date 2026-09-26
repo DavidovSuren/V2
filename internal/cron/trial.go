@@ -3,12 +3,10 @@ package cron
 import (
 	"database/sql"
 	"log"
-	"strings"
 	"time"
 
 	"version20/internal/store"
 	"version20/internal/subscription"
-	"version20/internal/telegram"
 )
 
 const trialEndingText = "Завтра заканчивается пробный период Version 2.0. " +
@@ -35,18 +33,9 @@ func trialEnding(s *store.Store, cfg Config, now time.Time) {
 		log.Println("[cron] trialEnding error:", err)
 		return
 	}
-	bot := telegram.NewBot(cfg.BotToken)
 	for _, u := range users {
-		if !trialEndsTomorrow(u.CreatedAt, u.Tier, u.ExpiresAt, now) {
-			continue
-		}
-		if cfg.PublicURL == "" {
-			telegram.SendMessage(cfg.BotToken, u.TgID, trialEndingText)
-			continue
-		}
-		if err := bot.SendMessageWithWebAppButton(u.TgID, trialEndingText, "Выбрать тариф",
-			strings.TrimRight(cfg.PublicURL, "/")+"/plans"); err != nil {
-			log.Println("[cron] trialEnding:", err)
+		if trialEndsTomorrow(u.CreatedAt, u.Tier, u.ExpiresAt, now) {
+			send(cfg, u.TgID, trialEndingText, "Выбрать тариф", "/plans")
 		}
 	}
 }

@@ -786,3 +786,35 @@ func TestDoneScreen(t *testing.T) {
 	// После отметки /diary — дневник, а не повторное закрытие дня.
 	mustContain(t, a.get(t, "1", "/diary").Body, "Сегодня уже отмечено", "Настроение за месяц")
 }
+
+func TestReminderSetting(t *testing.T) {
+	a := newDBApp(t)
+	a.newPlayer(t, "1", "")
+	page := a.get(t, "1", "/reminder").Body
+	mustContain(t, page, `value="07:00"`, `value="22:00"`, `value="15:15" checked`)
+	mustNotContain(t, page, `value="06:30"`, `value="22:30"`)
+
+	for _, bad := range []string{"06:30", "22:30", "07:15", "бред", ""} {
+		a.post(t, "1", "/reminder", url.Values{"at": {bad}})
+		if u := a.user(t, "1"); u.RemindAt.Valid {
+			t.Errorf("сохранено недопустимое время %q", bad)
+		}
+	}
+	if r := a.post(t, "1", "/reminder", url.Values{"at": {"09:30"}}); r.Location != "/reminder?saved=1" {
+		t.Fatalf("сохранение: %q", r.Location)
+	}
+	if u := a.user(t, "1"); u.RemindAt.String != "09:30" {
+		t.Errorf("remind_at: %v", u.RemindAt)
+	}
+	mustContain(t, a.get(t, "1", "/reminder?saved=1").Body, "напомним в 09:30", `value="09:30" checked`)
+	mustContain(t, a.get(t, "1", "/profile").Body, `href="/reminder"`, "09:30")
+
+	// Кому напоминать: сегодня ещё не отмечено; время и стрик — в списке.
+	a.newPlayer(t, "2", "")
+	a.post(t, "2", "/diary", url.Values{"emoji": {"3"}})
+	a.exec(t, "UPDATE users SET streak_current=5 WHERE tg_id='1'")
+	pending, err := a.Store.UsersPendingToday(reports.TodayMoscow())
+	if err != nil || len(pending) != 1 || pending[0].TgID != "1" || pending[0].RemindAt != "09:30" || pending[0].Streak != 5 {
+		t.Errorf("кому напоминать: %+v %v", pending, err)
+	}
+}

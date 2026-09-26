@@ -207,6 +207,8 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS payout_card_enc TEXT;
 -- Пользовательское соглашение (этап 5): когда и какую редакцию принял.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_accepted_at TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_version TEXT;
+-- Время ежедневного напоминания по Москве, "HH:MM" (этап 11); NULL — 15:15.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS remind_at TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS payout_card_last4 TEXT;
 ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'income';
 ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS withdrawal_id INTEGER REFERENCES withdrawals(id);

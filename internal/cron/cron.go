@@ -1,5 +1,5 @@
-// Package cron — напоминание 15:15 МСК + еженедельный/ежемесячный отчёт.
-// Порт backend/cron/*.js.
+// Package cron — фоновые задачи бота: напоминания (по времени пользователя
+// и вечером в 21:00), конец пробного периода, день вывода, отчёты.
 package cron
 
 import (
@@ -11,7 +11,6 @@ import (
 	"github.com/robfig/cron/v3"
 
 	"version20/internal/leveling"
-	"version20/internal/quotes"
 	"version20/internal/reports"
 	"version20/internal/store"
 	"version20/internal/telegram"
@@ -37,34 +36,16 @@ func Start(s *store.Store, cfg Config) {
 
 	c.AddFunc("0 12 * * *", func() { trialEnding(s, cfg, time.Now()) })
 	c.AddFunc("0 10 15 * *", func() { payday(s, cfg) })
-	c.AddFunc("15 15 * * *", func() { dailyReminder(s, botToken) })
+	c.AddFunc("* * * * *", func() { remindTick(s, cfg, time.Now()) })
 	c.AddFunc("0 10 * * 1", func() { weeklyReport(s, botToken) })
 	c.AddFunc("0 11 1 * *", func() { monthlyReport(s, botToken) })
 
 	c.Start()
 	log.Println("[cron] trialEnding запланирован на 12:00 Europe/Moscow")
 	log.Println("[cron] payday запланирован на 15-е число 10:00 Europe/Moscow")
-	log.Println("[cron] dailyReminder запланирован на 15:15 Europe/Moscow")
+	log.Println("[cron] напоминания: каждую минуту по времени пользователя (по умолчанию 15:15) и в 21:00 Europe/Moscow")
 	log.Println("[cron] weeklyReport запланирован на понедельник 10:00 Europe/Moscow")
 	log.Println("[cron] monthlyReport запланирован на 1-е число 11:00 Europe/Moscow")
-}
-
-func dailyReminder(s *store.Store, botToken string) {
-	today := reports.TodayMoscow()
-	users, err := s.UsersPendingToday(today)
-	if err != nil {
-		log.Println("[cron] dailyReminder error:", err)
-		return
-	}
-	for _, u := range users {
-		row, err := s.GetScheduleRow(u.ID, u.DayIndex)
-		if err != nil || row == nil {
-			continue
-		}
-		telegram.SendMessage(botToken, u.TgID, "⏰ Напоминание Version 2.0\n\nСегодняшнее действие:\n"+row.Text+
-			"\n\nЦитата дня: «"+quotes.ForUser(u.TgID, today, row.Category)+"»"+
-			"\n\nОткрой приложение и отметь, выполнил(а) ли ты его.")
-	}
 }
 
 func weeklyReport(s *store.Store, botToken string) {

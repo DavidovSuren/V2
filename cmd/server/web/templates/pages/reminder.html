@@ -1,0 +1,17 @@
+{{define "content"}}
+<div class="page-head">
+  <a href="/profile" class="back" aria-label="Назад">{{template "icon" "arrow-left"}}</a>
+  <h1>Напоминание</h1>
+</div>
+{{if .Saved}}<div class="notice-ok">{{template "icon" "check"}}Сохранено: напомним в {{.Current}}</div>{{end}}
+<p class="subtitle">Каждый день в это время бот пришлёт задание и цитату дня, если ты его ещё не отметил(а). Время — московское. Если стрик от 3 дней, а день ещё не закрыт, в 21:00 придёт мягкое второе напоминание.</p>
+<form method="POST" action="/reminder">
+  <div class="time-grid">
+    {{range .Options}}
+    <label class="age-opt"><input type="radio" name="at" value="{{.}}"{{if eq . $.Current}} checked{{end}} required><span>{{.}}</span></label>
+    {{end}}
+  </div>
+  <button class="btn btn-primary mt-16" type="submit">Сохранить</button>
+</form>
+{{template "nav" "profile"}}
+{{end}}

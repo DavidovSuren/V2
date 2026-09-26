@@ -150,6 +150,8 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("GET /plans", a.requireOnboarded(a.handlePlans))
 	mux.HandleFunc("POST /subscribe", a.requireOnboarded(a.handleSubscribe))
 	mux.HandleFunc("POST /promo", a.requireOnboarded(a.handlePromoRedeem))
+	mux.HandleFunc("GET /reminder", a.requireOnboarded(a.handleReminderShow))
+	mux.HandleFunc("POST /reminder", a.requireOnboarded(a.handleReminderSave))
 	mux.HandleFunc("POST /logout", a.requireOnboarded(a.handleLogout))
 
 	mux.HandleFunc("GET /reports/weekly", a.requireOnboarded(a.requireAccess(a.handleWeeklyReport)))

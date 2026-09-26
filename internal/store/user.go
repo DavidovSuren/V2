@@ -12,14 +12,14 @@ var ErrNotFound = sql.ErrNoRows
 const userColumns = `id, tg_id, username, name, gender, age_group, photos_json, created_at,
 	level, xp, completed_count, streak_current, streak_best, day_index, last_action_date,
 	subscription_tier, subscription_expires_at, referral_code, premium_agent_code,
-	referred_by_user_id, referred_by_code_type, terms_version`
+	referred_by_user_id, referred_by_code_type, terms_version, remind_at`
 
 func scanUser(row *sql.Row) (*models.User, error) {
 	var u models.User
 	err := row.Scan(&u.ID, &u.TgID, &u.Username, &u.Name, &u.Gender, &u.AgeGroup, &u.PhotosJSON, &u.CreatedAt,
 		&u.Level, &u.XP, &u.CompletedCount, &u.StreakCurrent, &u.StreakBest, &u.DayIndex, &u.LastActionDate,
 		&u.SubscriptionTier, &u.SubscriptionExpiresAt, &u.ReferralCode, &u.PremiumAgentCode,
-		&u.ReferredByUserID, &u.ReferredByCodeType, &u.TermsVersion)
+		&u.ReferredByUserID, &u.ReferredByCodeType, &u.TermsVersion, &u.RemindAt)
 	if err != nil {
 		return nil, err
 	}
@@ -109,6 +109,12 @@ func (s *Store) CreateUser(u NewUser) (int64, error) {
 	`, u.TgID, u.Username, u.Name, u.AgeGroup, u.PhotosJSON, u.CreatedAt,
 		u.ReferralCode, u.ReferredByUserID, u.ReferredByCodeType, u.TermsVersion).Scan(&id)
 	return id, err
+}
+
+// SetRemindAt — время ежедневного напоминания ("HH:MM").
+func (s *Store) SetRemindAt(userID int64, hhmm string) error {
+	_, err := s.DB.Exec(`UPDATE users SET remind_at = $1 WHERE id = $2`, hhmm, userID)
+	return err
 }
 
 // AcceptTerms — пользователь принял редакцию соглашения version.

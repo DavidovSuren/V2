@@ -13,7 +13,7 @@
   <a class="menu-item gold" href="/wallet">{{template "icon" "wallet"}}<span class="grow">Кошелёк</span><span class="value-gold">{{rub .Balance}}</span></a>
   <a class="menu-item" href="/plans">{{template "icon" "diamond"}}<span class="grow">Подписка</span><span class="value">{{if .TierActive}}Сменить{{else}}Оформить{{end}}</span></a>
   <a class="menu-item" href="/reports/weekly">{{template "icon" "file"}}<span class="grow">Отчёт недели</span></a>
-  <div class="menu-item">{{template "icon" "bell"}}<span class="grow">Напоминание</span><span class="value">{{.RemindAt}}</span></div>
+  <a class="menu-item" href="/reminder">{{template "icon" "bell"}}<span class="grow">Напоминание</span><span class="value">{{.RemindAt}}</span></a>
   <button class="menu-item" type="button" data-open-dialog="modal-promo">{{template "icon" "gift"}}<span class="grow">Промокод</span></button>
 </div>
 

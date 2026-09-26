@@ -33,6 +33,7 @@ type User struct {
 	ReferredByCodeType sql.NullString
 
 	TermsVersion sql.NullString // редакция принятого соглашения
+	RemindAt     sql.NullString // "HH:MM" по Москве; пусто — 15:15
 }
 
 func (u *User) HasPremiumAgentCode() bool {

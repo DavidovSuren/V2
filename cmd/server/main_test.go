@@ -52,7 +52,7 @@ func TestTemplatesParse(t *testing.T) {
 	for _, page := range []string{
 		"welcome.html", "quiz.html", "home.html", "skip_confirm.html", "diary.html", "done.html",
 		"progress.html", "community.html", "profile.html",
-		"report.html", "wallet.html", "plans.html", "pay.html", "terms.html", "terms_update.html", "withdraw.html",
+		"report.html", "wallet.html", "plans.html", "pay.html", "terms.html", "terms_update.html", "withdraw.html", "reminder.html",
 		"panel/admin_login.html", "panel/admin_dashboard.html", "panel/admin_questions.html",
 		"panel/admin_tasks.html", "panel/admin_task_edit.html", "panel/admin_users.html",
 		"panel/admin_user_edit.html", "panel/admin_withdrawals.html",

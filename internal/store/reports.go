@@ -119,11 +119,13 @@ type PendingUser struct {
 	ID       int64
 	TgID     string
 	DayIndex int
+	RemindAt string // "HH:MM"; пусто — время по умолчанию
+	Streak   int
 }
 
 func (s *Store) UsersPendingToday(today string) ([]PendingUser, error) {
 	rows, err := s.DB.Query(`
-		SELECT id, tg_id, day_index FROM users
+		SELECT id, tg_id, day_index, COALESCE(remind_at, ''), streak_current FROM users
 		WHERE gender IS NOT NULL AND day_index < 365
 		  AND (last_action_date IS NULL OR last_action_date != $1)
 	`, today)
@@ -135,7 +137,7 @@ func (s *Store) UsersPendingToday(today string) ([]PendingUser, error) {
 	var out []PendingUser
 	for rows.Next() {
 		var u PendingUser
-		if err := rows.Scan(&u.ID, &u.TgID, &u.DayIndex); err != nil {
+		if err := rows.Scan(&u.ID, &u.TgID, &u.DayIndex, &u.RemindAt, &u.Streak); err != nil {
 			return nil, err
 		}
 		out = append(out, u)

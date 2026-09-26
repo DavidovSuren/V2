@@ -8,7 +8,6 @@ import (
 
 	"version20/internal/payouts"
 	"version20/internal/store"
-	"version20/internal/telegram"
 )
 
 func paydayText(balance int) string {
@@ -38,15 +37,7 @@ func payday(s *store.Store, cfg Config) {
 		log.Println("[cron] payday error:", err)
 		return
 	}
-	bot := telegram.NewBot(cfg.BotToken)
 	for _, u := range users {
-		if cfg.PublicURL == "" {
-			telegram.SendMessage(cfg.BotToken, u.TgID, paydayText(u.Balance))
-			continue
-		}
-		if err := bot.SendMessageWithWebAppButton(u.TgID, paydayText(u.Balance), "Открыть кошелёк",
-			strings.TrimRight(cfg.PublicURL, "/")+"/wallet"); err != nil {
-			log.Println("[cron] payday:", err)
-		}
+		send(cfg, u.TgID, paydayText(u.Balance), "Открыть кошелёк", "/wallet")
 	}
 }
