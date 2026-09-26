@@ -92,25 +92,11 @@ func TestProtectedRoutesRedirectWithoutSession(t *testing.T) {
 	}
 }
 
-func TestAdminRequiresOwner(t *testing.T) {
+// Агентские коды заменены партнёркой: выдавать их больше нечем.
+func TestGrantPremiumAgentRemoved(t *testing.T) {
 	a := newTestApp(t)
-	if r := a.do(t, "POST", "/admin/grant-premium-agent", nil, ""); r.Code != http.StatusForbidden {
-		t.Errorf("без сессии: %d", r.Code)
-	}
-	if r := a.post(t, "42", "/admin/grant-premium-agent", url.Values{"username": {"x"}}); r.Code != http.StatusForbidden {
-		t.Errorf("не владелец: %d", r.Code)
-	}
-	a.AdminTgID = ""
-	if r := a.post(t, "", "/admin/grant-premium-agent", url.Values{"username": {"x"}}); r.Code != http.StatusForbidden {
-		t.Errorf("ADMIN_TG_ID не задан: %d", r.Code)
-	}
-}
-
-func TestAdminValidatesInput(t *testing.T) {
-	a := newTestApp(t)
-	r := a.post(t, testAdminID, "/admin/grant-premium-agent", url.Values{})
-	if r.Code != http.StatusBadRequest {
-		t.Errorf("без username/tgId: %d", r.Code)
+	if r := a.post(t, testAdminID, "/admin/grant-premium-agent", url.Values{"username": {"x"}}); r.Code == http.StatusOK {
+		t.Errorf("эндпоинт выдачи агентских кодов ещё работает: %d", r.Code)
 	}
 }
 

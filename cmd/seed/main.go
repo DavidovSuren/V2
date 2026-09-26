@@ -1,7 +1,7 @@
 // Command seed наполняет локальную БД демо-данными: пользователи на разных
 // этапах (новичок без анкеты, активные со стриком, 100 уровень), подписки,
-// реферальная цепочка с премиум-агентами (выданный админом и ставший агентом
-// сам через Premium), кошелёк, друзья, дневник.
+// реферальная цепочка с партнёрским доходом (включая старые агентские коды —
+// они работают как обычная реферальная ссылка), кошелёк, друзья, дневник.
 //
 // Запуск (из корня репозитория):
 //
@@ -31,6 +31,7 @@ import (
 	"version20/internal/referrals"
 	"version20/internal/scheduler"
 	"version20/internal/store"
+	"version20/internal/subscription"
 )
 
 type spec struct {
@@ -182,7 +183,7 @@ func main() {
 	}
 
 	log.Printf("seed готов: %d пользователей (tg_id 100001..100014). Вход: DEV_ALLOW_FAKE_AUTH=true, initData \"debug:<tg_id>\"", len(specs))
-	log.Printf("кабинет агента /partner: коды AGENT01 и LENA8888, пароль %q", agentPassword)
+	log.Printf("кабинет партнёра /partner: коды AGENT01 и LENA8888 (или реферальный код), пароль %q", agentPassword)
 }
 
 // seedProgress проходит анкету случайными ответами, строит план тем же
@@ -257,36 +258,33 @@ func seedProgress(conn *sql.DB, st *store.Store, rng *rand.Rand, id int64, s spe
 	}
 }
 
-// pay повторяет handleSubscriptionPay: скидка по обычному коду, 50% комиссии
-// премиум-агенту в кошелёк.
+// pay повторяет activateSubscription: полная цена, партнёрский доход
+// пригласившему по его тарифу (5/10% Plus, 20/50% Premium).
 func pay(conn *sql.DB, st *store.Store, id int64, s spec, now time.Time) {
 	u, err := st.GetUserByID(id)
 	must(err)
-	base := referrals.Prices[s.pays]
-	discount := 0
-	var commissionTo sql.NullInt64
-	commission := 0
+	price := referrals.Prices[s.pays]
+	paidAt := now.AddDate(0, 0, -3)
+	p := store.Payment{UserID: id, Tier: s.pays, Price: price, PaidAt: paidAt.Format(time.RFC3339)}
 	if u.ReferredByUserID.Valid {
-		if u.ReferredByCodeType.String == "premium_agent" {
-			commissionTo = u.ReferredByUserID
-		} else {
-			n, err := st.PriorPaidReferralsCount(u.ReferredByUserID.Int64)
-			must(err)
-			discount = referrals.DiscountPctForReferrer(n)
+		ref, err := st.GetUserByID(u.ReferredByUserID.Int64)
+		must(err)
+		prior, err := st.PriorPayingReferralsCount(conn, ref.ID, id)
+		must(err)
+		if pct := referrals.CommissionPct(subscription.ActiveTier(ref.SubscriptionTier, ref.SubscriptionExpiresAt), prior); pct > 0 {
+			p.ReferrerID = u.ReferredByUserID
+			p.CommissionPct = pct
+			p.CommissionAmount = referrals.CommissionAmount(price, pct)
 		}
 	}
-	paid := referrals.PriceAfterDiscount(base, discount)
-	if commissionTo.Valid {
-		commission = referrals.CommissionAmount(paid)
-	}
-	paidAt := now.AddDate(0, 0, -3)
-	must(st.InsertSubscriptionPayment(conn, id, s.pays, base, discount, paid, commissionTo, commission, paidAt.Format(time.RFC3339)))
+	must(st.InsertSubscriptionPayment(conn, p))
 	// Не затираем подарочный Premium за 100 уровень.
 	if u.SubscriptionTier == "free" {
 		must(st.UpdateSubscription(conn, id, s.pays, paidAt.AddDate(0, 1, 0).Format(time.RFC3339)))
 	}
-	if commissionTo.Valid {
-		must(st.InsertWalletTransaction(conn, commissionTo.Int64, commission, id, "Комиссия с оплаты "+s.pays, paidAt.Format(time.RFC3339)))
+	if p.CommissionAmount > 0 {
+		must(st.InsertWalletTransaction(conn, p.ReferrerID.Int64, p.CommissionAmount, id,
+			"Партнёрский доход: "+u.Name+", "+referrals.TierNames[s.pays], p.PaidAt))
 	}
 }
 

@@ -298,110 +298,202 @@ func TestProgressPage(t *testing.T) {
 	_ = last
 }
 
-func TestReferralDiscountLadder(t *testing.T) {
+type payment struct {
+	Price, DiscountPct, CommissionPct, Commission int
+	ReferrerID                                    int64
+}
+
+func (a *App) payments(t *testing.T, userID int64) []payment {
+	t.Helper()
+	rows, err := a.Store.DB.Query(`SELECT price_paid, discount_pct, commission_pct, commission_amount,
+		COALESCE(referrer_commission_user_id, 0) FROM subscription_payments WHERE user_id=$1 ORDER BY id`, userID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var out []payment
+	for rows.Next() {
+		var p payment
+		if err := rows.Scan(&p.Price, &p.DiscountPct, &p.CommissionPct, &p.Commission, &p.ReferrerID); err != nil {
+			t.Fatal(err)
+		}
+		out = append(out, p)
+	}
+	return out
+}
+
+// captureNotify перехватывает сообщения бота.
+func (a *App) captureNotify() *[]string {
+	var msgs []string
+	a.Notify = func(tgID, text string) { msgs = append(msgs, tgID+": "+text) }
+	return &msgs
+}
+
+// Пригласивший с Premium: первые 10 оплативших приносят по 20%, с 11-го — 50%.
+// Приглашённые всегда платят полную цену.
+func TestPartnerPremiumReferrerBoost(t *testing.T) {
 	a := newDBApp(t)
+	msgs := a.captureNotify()
 	ref := a.newPlayer(t, "100", "")
+	a.post(t, "100", "/subscribe", url.Values{"tier": {"premium888"}})
 	code := ref.ReferralCode.String
 
-	// Скидка приглашённого зависит от числа уже оплативших до него:
-	// 0–3 → 20%, 4–9 → 35%, 10+ → 50%.
-	wantPct := []int{20, 20, 20, 20, 35, 35, 35, 35, 35, 35, 50, 50}
-	wantPrice := map[int]int{20: 295, 35: 240, 50: 185}
-	for i, pct := range wantPct {
-		tg := "2" + strings.Repeat("0", 2) + string(rune('a'+i))
+	total := 0
+	for i := 0; i < 12; i++ {
+		tg := itoa(200 + i)
 		a.newPlayer(t, tg, code)
-
-		profile := a.get(t, tg, "/profile").Body
-		mustContain(t, profile, "(-"+itoa(pct)+"%)")
-
+		mustNotContain(t, a.get(t, tg, "/profile").Body, "old-price", "-20%")
 		if r := a.post(t, tg, "/subscribe", url.Values{"tier": {"plus369"}}); r.Location != "/profile" {
 			t.Fatalf("subscribe: %q", r.Location)
 		}
-		var gotPct, gotPrice, commission int
-		a.Store.DB.QueryRow(`SELECT discount_pct, price_paid, commission_amount FROM subscription_payments
-			WHERE user_id=$1`, a.user(t, tg).ID).Scan(&gotPct, &gotPrice, &commission)
-		if gotPct != pct || gotPrice != wantPrice[pct] || commission != 0 {
-			t.Errorf("оплата #%d: %d%% %d₽ комиссия %d, want %d%% %d₽", i+1, gotPct, gotPrice, commission, pct, wantPrice[pct])
+		wantPct, wantAmount := 20, 74
+		if i >= 10 {
+			wantPct, wantAmount = 50, 185
 		}
-		u := a.user(t, tg)
-		if u.SubscriptionTier != "plus369" {
-			t.Errorf("тариф: %s", u.SubscriptionTier)
+		p := a.payments(t, a.user(t, tg).ID)
+		if len(p) != 1 || p[0].Price != 369 || p[0].DiscountPct != 0 || p[0].CommissionPct != wantPct ||
+			p[0].Commission != wantAmount || p[0].ReferrerID != ref.ID {
+			t.Errorf("оплата #%d: %+v, want %d%% = %d ₽", i+1, p, wantPct, wantAmount)
 		}
+		total += wantAmount
 	}
+	if bal, _ := a.Store.WalletBalance(ref.ID); bal != total || total != 10*74+2*185 {
+		t.Errorf("баланс %d, want %d", bal, total)
+	}
+	if n := a.count(t, "SELECT COUNT(*) FROM wallet_transactions WHERE user_id=$1 AND note='Партнёрский доход: User 211, Plus'", ref.ID); n != 1 {
+		t.Errorf("запись в кошельке: %d", n)
+	}
+	if len(*msgs) != 12 || (*msgs)[11] != "100: +185 ₽ в кошелёк: User 211 оформил(а) Plus" {
+		t.Errorf("сообщения бота: %d, последнее %q", len(*msgs), (*msgs)[len(*msgs)-1])
+	}
+	mustContain(t, a.get(t, "100", "/wallet").Body, "1110 ₽", "<strong>12</strong>")
 
-	// Без приглашения — полная цена; неизвестный тариф игнорируется.
-	a.post(t, "100", "/subscribe", url.Values{"tier": {"gold"}})
-	a.post(t, "100", "/subscribe", url.Values{"tier": {"premium888"}})
-	var pct, price int
-	a.Store.DB.QueryRow("SELECT discount_pct, price_paid FROM subscription_payments WHERE user_id=$1", ref.ID).Scan(&pct, &price)
-	if pct != 0 || price != 888 {
-		t.Errorf("без реферера: %d%% %d₽", pct, price)
-	}
-	if n := a.count(t, "SELECT COUNT(*) FROM subscription_payments WHERE user_id=$1", ref.ID); n != 1 {
-		t.Errorf("неизвестный тариф записан: %d", n)
+	// Неизвестный тариф не создаёт оплату.
+	a.post(t, "200", "/subscribe", url.Values{"tier": {"gold"}})
+	if n := len(a.payments(t, a.user(t, "200").ID)); n != 1 {
+		t.Errorf("неизвестный тариф записан: %d оплат", n)
 	}
 }
 
-func TestPremiumAgentFlow(t *testing.T) {
+// Пригласивший без активной подписки ничего не получает.
+func TestPartnerReferrerWithoutSubscription(t *testing.T) {
 	a := newDBApp(t)
-	agent := a.newPlayer(t, "200", "")
-	a.exec(t, "UPDATE users SET username='agent007' WHERE id=$1", agent.ID)
+	msgs := a.captureNotify()
+	ref := a.newPlayer(t, "100", "")
+	a.newPlayer(t, "200", ref.ReferralCode.String)
+	a.post(t, "200", "/subscribe", url.Values{"tier": {"premium888"}})
 
-	if r := a.get(t, "200", "/wallet"); r.Code != http.StatusForbidden {
-		t.Errorf("кошелёк без кода: %d", r.Code)
+	p := a.payments(t, a.user(t, "200").ID)
+	if len(p) != 1 || p[0].Price != 888 || p[0].Commission != 0 || p[0].ReferrerID != 0 {
+		t.Errorf("оплата: %+v", p)
 	}
-	if r := a.post(t, "200", "/wallet/withdraw", nil); r.Code != http.StatusForbidden {
-		t.Errorf("вывод без кода: %d", r.Code)
+	if n := a.count(t, "SELECT COUNT(*) FROM wallet_transactions WHERE user_id=$1", ref.ID); n != 0 {
+		t.Errorf("записей в кошельке: %d", n)
 	}
-
-	if r := a.post(t, testAdminID, "/admin/grant-premium-agent", url.Values{"username": {"@nobody"}}); r.Code != http.StatusNotFound {
-		t.Errorf("несуществующий: %d", r.Code)
-	}
-	r := a.post(t, testAdminID, "/admin/grant-premium-agent", url.Values{"username": {"@agent007"}})
-	if r.Code != 200 || !strings.HasPrefix(r.Body, "код выдан: ") {
-		t.Fatalf("выдача: %d %s", r.Code, r.Body)
-	}
-	agentCode := strings.TrimPrefix(r.Body, "код выдан: ")
-	if len(agentCode) != 8 {
-		t.Errorf("код: %q", agentCode)
-	}
-	if r := a.post(t, testAdminID, "/admin/grant-premium-agent", url.Values{"tgId": {"200"}}); r.Body != "уже выдан: "+agentCode {
-		t.Errorf("повторная выдача: %s", r.Body)
-	}
-	mustContain(t, a.get(t, "200", "/profile").Body, `href="/wallet"`)
-
-	// Приглашённый по агентскому коду платит полную цену, агенту — 50%.
-	a.newPlayer(t, "201", agentCode)
-	if u := a.user(t, "201"); u.ReferredByCodeType.String != "premium_agent" {
-		t.Fatalf("тип кода: %v", u.ReferredByCodeType)
-	}
-	mustNotContain(t, a.get(t, "201", "/profile").Body, "old-price")
-	a.post(t, "201", "/subscribe", url.Values{"tier": {"plus369"}})
-	a.newPlayer(t, "202", agentCode)
-	a.post(t, "202", "/subscribe", url.Values{"tier": {"premium888"}})
-
-	var price, commission int
-	a.Store.DB.QueryRow("SELECT price_paid, commission_amount FROM subscription_payments WHERE user_id=$1",
-		a.user(t, "201").ID).Scan(&price, &commission)
-	if price != 369 || commission != 185 {
-		t.Errorf("агентская оплата 369: цена %d, комиссия %d (Node: 369 / 185)", price, commission)
+	if len(*msgs) != 0 {
+		t.Errorf("сообщения: %v", *msgs)
 	}
 
-	w := a.get(t, "200", "/wallet")
-	if w.Code != 200 {
-		t.Fatalf("кошелёк: %d", w.Code)
+	// Истёкшая подписка — тоже нет дохода.
+	a.exec(t, "UPDATE users SET subscription_tier='premium888', subscription_expires_at=$1 WHERE id=$2",
+		time.Now().Add(-time.Hour).UTC().Format(time.RFC3339), ref.ID)
+	a.post(t, "200", "/subscribe", url.Values{"tier": {"premium888"}})
+	if bal, _ := a.Store.WalletBalance(ref.ID); bal != 0 {
+		t.Errorf("баланс с истёкшей подпиской: %d", bal)
 	}
-	mustContain(t, w.Body, "629 ₽", "<strong>2</strong>", "+444 ₽", "+185 ₽", "Комиссия с оплаты premium888")
+}
 
-	wd := a.post(t, "200", "/wallet/withdraw", nil)
-	if wd.Location != "/wallet?msg=soon" {
-		t.Fatalf("вывод: %q", wd.Location)
+// Пригласивший с Plus получает 5%: 369 × 5% = 18 ₽. Старый агентский код
+// работает как обычная реферальная ссылка.
+func TestPartnerPlusReferrerAndLegacyAgentCode(t *testing.T) {
+	a := newDBApp(t)
+	ref := a.newPlayer(t, "100", "")
+	a.post(t, "100", "/subscribe", url.Values{"tier": {"plus369"}})
+	if err := a.Store.SetPremiumAgentCode(ref.ID, "AGENT01"); err != nil {
+		t.Fatal(err)
 	}
-	mustContain(t, a.get(t, "200", wd.Location).Body, "Вывод средств скоро появится")
 
-	// Скидочная лестница агента не касается: у него нет "обычных" рефералов.
-	if n, _ := a.Store.PriorPaidReferralsCount(agent.ID); n != 2 {
-		t.Errorf("оплативших по коду: %d", n)
+	a.newPlayer(t, "200", ref.ReferralCode.String)
+	a.post(t, "200", "/subscribe", url.Values{"tier": {"plus369"}})
+	a.newPlayer(t, "201", "AGENT01")
+	if u := a.user(t, "201"); u.ReferredByUserID.Int64 != ref.ID {
+		t.Fatalf("агентский код не привязал к пригласившему: %+v", u.ReferredByUserID)
+	}
+	a.post(t, "201", "/subscribe", url.Values{"tier": {"premium888"}})
+
+	if p := a.payments(t, a.user(t, "200").ID); p[0].Commission != 18 || p[0].CommissionPct != 5 {
+		t.Errorf("Plus-пригласивший, оплата Plus: %+v", p)
+	}
+	if p := a.payments(t, a.user(t, "201").ID); p[0].Price != 888 || p[0].Commission != 44 {
+		t.Errorf("по агентскому коду — полная цена и обычный процент: %+v", p)
+	}
+}
+
+// Продление тем же человеком: комиссия начисляется снова, счётчик
+// оплативших не растёт, срок продлевается от старой даты окончания.
+func TestPartnerRenewal(t *testing.T) {
+	a := newDBApp(t)
+	ref := a.newPlayer(t, "100", "")
+	a.post(t, "100", "/subscribe", url.Values{"tier": {"premium888"}})
+	a.newPlayer(t, "200", ref.ReferralCode.String)
+
+	a.post(t, "200", "/subscribe", url.Values{"tier": {"plus369"}})
+	first, _ := time.Parse(time.RFC3339, a.user(t, "200").SubscriptionExpiresAt.String)
+	a.post(t, "200", "/subscribe", url.Values{"tier": {"plus369"}})
+	second, _ := time.Parse(time.RFC3339, a.user(t, "200").SubscriptionExpiresAt.String)
+
+	if !second.Equal(first.AddDate(0, 1, 0)) {
+		t.Errorf("продление: %v → %v, want +1 месяц от старой даты", first, second)
+	}
+	p := a.payments(t, a.user(t, "200").ID)
+	if len(p) != 2 || p[0].Commission != 74 || p[1].Commission != 74 {
+		t.Errorf("оплаты: %+v", p)
+	}
+	if n, _ := a.Store.PayingReferralsCount(ref.ID); n != 1 {
+		t.Errorf("оплативших: %d, want 1", n)
+	}
+
+	// Смена тарифа — новый срок от сейчас, не от старой даты.
+	a.post(t, "200", "/subscribe", url.Values{"tier": {"premium888"}})
+	third, _ := time.Parse(time.RFC3339, a.user(t, "200").SubscriptionExpiresAt.String)
+	if third.After(time.Now().AddDate(0, 1, 1)) {
+		t.Errorf("смена тарифа продлила от старой даты: %v", third)
+	}
+}
+
+// Повторный charge_id не создаёт вторую оплату и второе начисление.
+func TestActivateSubscriptionIdempotent(t *testing.T) {
+	a := newDBApp(t)
+	ref := a.newPlayer(t, "100", "")
+	a.post(t, "100", "/subscribe", url.Values{"tier": {"premium888"}})
+	u := a.newPlayer(t, "200", ref.ReferralCode.String)
+
+	for i := 0; i < 2; i++ {
+		if err := a.activateSubscription(u.ID, "premium888", "tg-charge-1"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := len(a.payments(t, u.ID)); n != 1 {
+		t.Errorf("оплат: %d", n)
+	}
+	if bal, _ := a.Store.WalletBalance(ref.ID); bal != 178 {
+		t.Errorf("баланс: %d, want 178", bal)
+	}
+	if err := a.activateSubscription(u.ID, "gold", "x"); err == nil {
+		t.Error("неизвестный тариф принят")
+	}
+}
+
+// Кошелёк есть у всех, не только у бывших агентов.
+func TestWalletForEveryone(t *testing.T) {
+	a := newDBApp(t)
+	a.newPlayer(t, "1", "")
+	if r := a.get(t, "1", "/wallet"); r.Code != 200 {
+		t.Fatalf("кошелёк: %d", r.Code)
+	}
+	mustContain(t, a.get(t, "1", "/profile").Body, `href="/wallet"`, "Партнёрская программа")
+	if r := a.post(t, "1", "/agent/become", nil); r.Code == http.StatusSeeOther {
+		t.Error("маршрут «Стать агентом» ещё существует")
 	}
 }
 
@@ -433,44 +525,6 @@ func TestCommunityVisibility(t *testing.T) {
 	// Истёкшая подписка снова прячет уровни.
 	a.exec(t, "UPDATE users SET subscription_expires_at=$1 WHERE tg_id='1'", time.Now().Add(-time.Hour).UTC().Format(time.RFC3339))
 	mustNotContain(t, a.get(t, "1", "/community").Body, "Ур. 100")
-}
-
-func TestBecomeAgent(t *testing.T) {
-	a := newDBApp(t)
-	a.newPlayer(t, "1", "")
-
-	// Без Premium — отказ с понятной ошибкой в профиле.
-	if r := a.post(t, "1", "/agent/become", nil); r.Location != "/profile?agent_err=premium" {
-		t.Fatalf("free: redirect %q", r.Location)
-	}
-	mustContain(t, a.get(t, "1", "/profile?agent_err=premium").Body, "только с активной подпиской Premium")
-	if u := a.user(t, "1"); u.HasPremiumAgentCode() {
-		t.Fatal("free не должен стать агентом")
-	}
-
-	a.post(t, "1", "/subscribe", url.Values{"tier": {"premium888"}})
-	mustContain(t, a.get(t, "1", "/profile").Body, `action="/agent/become"`)
-	if r := a.post(t, "1", "/agent/become", nil); r.Location != "/wallet" {
-		t.Fatalf("premium: redirect %q", r.Location)
-	}
-	u := a.user(t, "1")
-	if len(u.PremiumAgentCode.String) != 8 {
-		t.Fatalf("код: %q", u.PremiumAgentCode.String)
-	}
-	mustContain(t, a.get(t, "1", "/profile").Body, u.PremiumAgentCode.String)
-
-	// Повторный запрос не меняет код.
-	a.post(t, "1", "/agent/become", nil)
-	if a.user(t, "1").PremiumAgentCode.String != u.PremiumAgentCode.String {
-		t.Fatal("код изменился")
-	}
-
-	// Приглашённый по коду приносит 50% в кошелёк.
-	a.newPlayer(t, "2", u.PremiumAgentCode.String)
-	a.post(t, "2", "/subscribe", url.Values{"tier": {"premium888"}})
-	if bal, _ := a.Store.WalletBalance(u.ID); bal != 444 {
-		t.Fatalf("баланс агента %d, want 444", bal)
-	}
 }
 
 func TestContactsAndAddFriend(t *testing.T) {
@@ -507,7 +561,10 @@ func TestContactsAndAddFriend(t *testing.T) {
 
 func TestPromo100LVL(t *testing.T) {
 	a := newDBApp(t)
-	a.onboard(t, "1", "")
+	// Пригласивший с Premium: промокод — не оплата, комиссии быть не должно.
+	ref := a.newPlayer(t, "9", "")
+	a.post(t, "9", "/subscribe", url.Values{"tier": {"premium888"}})
+	a.onboard(t, "1", ref.ReferralCode.String)
 	r := a.post(t, "1", "/promo", url.Values{"code": {"100lvl"}})
 	mustContain(t, a.get(t, "1", r.Location).Body, "Сначала пройди анкету")
 
@@ -548,6 +605,12 @@ func TestPromo100LVL(t *testing.T) {
 	if n := a.count(t, "SELECT COUNT(*) FROM promo_redemptions WHERE user_id=$1", u.ID); n != 1 {
 		t.Errorf("погашений: %d", n)
 	}
+	if n := len(a.payments(t, u.ID)); n != 0 {
+		t.Errorf("промокод создал оплату: %d", n)
+	}
+	if bal, _ := a.Store.WalletBalance(ref.ID); bal != 0 {
+		t.Errorf("пригласившему начислено за промокод: %d", bal)
+	}
 }
 
 func TestUsernameSyncedFromTelegram(t *testing.T) {
@@ -579,10 +642,12 @@ func TestUsernameSyncedFromTelegram(t *testing.T) {
 		t.Errorf("username не обновился: %v", u.Username)
 	}
 
-	// Благодаря этому работает выдача агентского кода по @username.
-	r := a.post(t, testAdminID, "/admin/grant-premium-agent", url.Values{"username": {"@ann_renamed"}})
-	if !strings.HasPrefix(r.Body, "код выдан: ") {
-		t.Errorf("выдача по username: %d %s", r.Code, r.Body)
+	// Благодаря этому друга можно найти по @username.
+	a.newPlayer(t, "556", "")
+	a.exec(t, "UPDATE users SET subscription_tier='premium888', subscription_expires_at='2099-01-01T00:00:00Z' WHERE tg_id='556'")
+	a.post(t, "556", "/friends/add", url.Values{"username": {"@ann_renamed"}})
+	if n := a.count(t, "SELECT COUNT(*) FROM friendships"); n != 2 {
+		t.Errorf("друг по username не добавлен: %d", n)
 	}
 }
 

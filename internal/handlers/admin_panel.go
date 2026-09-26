@@ -307,9 +307,7 @@ func (a *App) handleAdminUserEdit(w http.ResponseWriter, r *http.Request) {
 	if u.SubscriptionExpiresAt.Valid && len(u.SubscriptionExpiresAt.String) >= 10 {
 		data.ExpiresDate = u.SubscriptionExpiresAt.String[:10]
 	}
-	if u.HasPremiumAgentCode() {
-		data.Balance, _ = a.Store.WalletBalance(u.ID)
-	}
+	data.Balance, _ = a.Store.WalletBalance(u.ID)
 	a.renderAdmin(w, r, "admin_user_edit.html", u.Name, data)
 }
 
@@ -349,73 +347,12 @@ func (a *App) handleAdminUserSave(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, flashURL(editURL, "ok", "Сохранено", ""), http.StatusSeeOther)
 }
 
-// ---- Агенты ----
+// ---- Партнёры ----
 
-func (a *App) handleAdminAgents(w http.ResponseWriter, r *http.Request) {
-	agents, err := a.Store.ListAgents()
-	if err != nil {
-		a.serverError(w, err)
-		return
-	}
-	a.renderAdmin(w, r, "admin_agents.html", "Агенты", agents)
-}
-
-// handleAdminAgentGrant — выдать агентский код по @username / tg_id (форма
-// на странице агентов) или по id (кнопка в карточке пользователя).
-func (a *App) handleAdminAgentGrant(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	back := r.FormValue("back")
-	if back != "/admin/agents" && !strings.HasPrefix(back, "/admin/users/") {
-		back = "/admin/agents"
-	}
-	var target *models.User
-	var err error
-	if id, perr := strconv.ParseInt(r.FormValue("user_id"), 10, 64); perr == nil {
-		target, err = a.Store.GetUserByID(id)
-	} else {
-		who := strings.TrimPrefix(strings.TrimSpace(r.FormValue("who")), "@")
-		if who == "" {
-			http.Redirect(w, r, flashURL(back, "err", "Укажите @username или tg_id", ""), http.StatusSeeOther)
-			return
-		}
-		target, err = a.Store.GetUserByTgID(who)
-		if err == nil && target == nil {
-			target, err = a.Store.GetUserByUsername(who)
-		}
-	}
-	if err != nil {
-		a.serverError(w, err)
-		return
-	}
-	if target == nil {
-		http.Redirect(w, r, flashURL(back, "err", "Пользователь не найден", ""), http.StatusSeeOther)
-		return
-	}
-	if target.HasPremiumAgentCode() {
-		http.Redirect(w, r, flashURL(back, "err", "У пользователя уже есть код "+target.PremiumAgentCode.String, ""), http.StatusSeeOther)
-		return
-	}
-	code, err := a.issuePremiumAgentCode(target.ID)
-	if err != nil {
-		a.serverError(w, err)
-		return
-	}
-	http.Redirect(w, r, flashURL(back, "ok", "Код выдан: "+code, ""), http.StatusSeeOther)
-}
-
-func (a *App) handleAdminAgentRevoke(w http.ResponseWriter, r *http.Request) {
-	u := a.adminTargetUser(w, r)
-	if u == nil {
-		return
-	}
-	if err := a.Store.RevokePremiumAgentCode(u.ID); err != nil {
-		a.serverError(w, err)
-		return
-	}
-	http.Redirect(w, r, flashURL("/admin/agents", "ok", "Код отозван", ""), http.StatusSeeOther)
-}
-
-func (a *App) handleAdminAgentResetPassword(w http.ResponseWriter, r *http.Request) {
+// handleAdminPartnerResetPassword — сбросить пароль кабинета партнёра
+// (/partner): все его сессии в кабинете завершаются, новый пароль он задаст
+// в профиле Mini App.
+func (a *App) handleAdminPartnerResetPassword(w http.ResponseWriter, r *http.Request) {
 	u := a.adminTargetUser(w, r)
 	if u == nil {
 		return
@@ -424,5 +361,6 @@ func (a *App) handleAdminAgentResetPassword(w http.ResponseWriter, r *http.Reque
 		a.serverError(w, err)
 		return
 	}
-	http.Redirect(w, r, flashURL("/admin/agents", "ok", "Пароль сброшен — агент задаст новый в профиле Mini App", ""), http.StatusSeeOther)
+	editURL := "/admin/users/" + strconv.FormatInt(u.ID, 10)
+	http.Redirect(w, r, flashURL(editURL, "ok", "Пароль кабинета партнёра сброшен — пользователь задаст новый в профиле", ""), http.StatusSeeOther)
 }

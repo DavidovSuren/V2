@@ -3,8 +3,6 @@ package store
 import (
 	"database/sql"
 	"errors"
-
-	"version20/internal/models"
 )
 
 // AdminUserRow — строка списка пользователей в админке.
@@ -60,54 +58,9 @@ func (s *Store) AdminUpdateUser(id int64, name, username, tier, expiresAt string
 	return err
 }
 
-// RevokePremiumAgentCode снимает агентский код и пароль кабинета. Уже
-// приглашённые остаются привязаны к агенту (referred_by_code_type не меняется).
-func (s *Store) RevokePremiumAgentCode(userID int64) error {
-	_, err := s.DB.Exec(`UPDATE users SET premium_agent_code = NULL, agent_password_hash = NULL WHERE id = $1`, userID)
-	return err
-}
-
-type AgentRow struct {
-	ID              int64
-	Name            string
-	Username        sql.NullString
-	Code            string
-	Referred        int
-	PayingReferrals int
-	Balance         int
-	HasPassword     bool
-}
-
-func (s *Store) ListAgents() ([]AgentRow, error) {
-	rows, err := s.DB.Query(`
-		SELECT u.id, u.name, u.username, u.premium_agent_code,
-		       (SELECT COUNT(*) FROM referrals r WHERE r.referrer_id = u.id AND r.code_type = 'premium_agent')::int,
-		       (SELECT COUNT(DISTINCT p.user_id) FROM subscription_payments p WHERE p.referrer_commission_user_id = u.id)::int,
-		       (SELECT COALESCE(SUM(w.amount), 0) FROM wallet_transactions w WHERE w.user_id = u.id)::int,
-		       u.agent_password_hash IS NOT NULL
-		FROM users u
-		WHERE u.premium_agent_code IS NOT NULL AND u.premium_agent_code <> ''
-		ORDER BY u.id
-	`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []AgentRow
-	for rows.Next() {
-		var a AgentRow
-		if err := rows.Scan(&a.ID, &a.Name, &a.Username, &a.Code, &a.Referred, &a.PayingReferrals, &a.Balance, &a.HasPassword); err != nil {
-			return nil, err
-		}
-		out = append(out, a)
-	}
-	return out, rows.Err()
-}
-
 type AdminStats struct {
-	Users, Onboarded, Plus, Premium, Agents int
-	Revenue, Commissions                    int
+	Users, Onboarded, Plus, Premium, Partners int
+	Revenue, Commissions                      int
 }
 
 func (s *Store) Stats(nowRFC3339 string) (AdminStats, error) {
@@ -118,10 +71,10 @@ func (s *Store) Stats(nowRFC3339 string) (AdminStats, error) {
 		  (SELECT COUNT(*) FROM users WHERE gender IS NOT NULL)::int,
 		  (SELECT COUNT(*) FROM users WHERE subscription_tier = 'plus369' AND subscription_expires_at > $1)::int,
 		  (SELECT COUNT(*) FROM users WHERE subscription_tier = 'premium888' AND subscription_expires_at > $1)::int,
-		  (SELECT COUNT(*) FROM users WHERE premium_agent_code IS NOT NULL AND premium_agent_code <> '')::int,
+		  (SELECT COUNT(DISTINCT referrer_commission_user_id) FROM subscription_payments WHERE commission_amount > 0)::int,
 		  (SELECT COALESCE(SUM(price_paid), 0) FROM subscription_payments)::int,
 		  (SELECT COALESCE(SUM(commission_amount), 0) FROM subscription_payments)::int
-	`, nowRFC3339).Scan(&st.Users, &st.Onboarded, &st.Plus, &st.Premium, &st.Agents, &st.Revenue, &st.Commissions)
+	`, nowRFC3339).Scan(&st.Users, &st.Onboarded, &st.Plus, &st.Premium, &st.Partners, &st.Revenue, &st.Commissions)
 	return st, err
 }
 
@@ -139,26 +92,26 @@ func (s *Store) SetAgentPasswordHash(userID int64, hash string) error {
 	return err
 }
 
-// ReferredRow — приглашённый агентом пользователь для кабинета агента.
+// ReferredRow — приглашённый пользователем человек (для кабинета партнёра).
 type ReferredRow struct {
 	Name             string
 	JoinedAt         string
 	SubscriptionTier string
 	Paid             int // сумма оплат
-	Commission       int // сколько получил агент
+	Commission       int // сколько получил партнёр
 }
 
-func (s *Store) AgentReferred(agentID int64) ([]ReferredRow, error) {
+func (s *Store) PartnerReferred(partnerID int64) ([]ReferredRow, error) {
 	rows, err := s.DB.Query(`
-		SELECT u.name, r.created_at, u.subscription_tier,
-		       COALESCE(SUM(p.price_paid), 0)::int, COALESCE(SUM(p.commission_amount), 0)::int
-		FROM referrals r
-		JOIN users u ON u.id = r.referred_id
-		LEFT JOIN subscription_payments p ON p.user_id = u.id AND p.referrer_commission_user_id = r.referrer_id
-		WHERE r.referrer_id = $1 AND r.code_type = 'premium_agent'
-		GROUP BY u.id, u.name, r.created_at, u.subscription_tier
-		ORDER BY r.created_at DESC
-	`, agentID)
+		SELECT u.name, u.created_at, u.subscription_tier,
+		       COALESCE(SUM(p.price_paid), 0)::int,
+		       COALESCE(SUM(CASE WHEN p.referrer_commission_user_id = $1 THEN p.commission_amount ELSE 0 END), 0)::int
+		FROM users u
+		LEFT JOIN subscription_payments p ON p.user_id = u.id
+		WHERE u.referred_by_user_id = $1
+		GROUP BY u.id, u.name, u.created_at, u.subscription_tier
+		ORDER BY u.created_at DESC
+	`, partnerID)
 	if err != nil {
 		return nil, err
 	}
@@ -173,13 +126,4 @@ func (s *Store) AgentReferred(agentID int64) ([]ReferredRow, error) {
 		out = append(out, r)
 	}
 	return out, rows.Err()
-}
-
-func (s *Store) GetUserByAgentCode(code string) (*models.User, error) {
-	row := s.DB.QueryRow("SELECT "+userColumns+" FROM users WHERE premium_agent_code = $1", code)
-	u, err := scanUser(row)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
-	}
-	return u, err
 }

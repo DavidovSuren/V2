@@ -1,14 +1,14 @@
 {{define "content"}}
 <main class="login">
   <div class="card">
-    <h1>Кабинет агента</h1>
+    <h1>Кабинет партнёра</h1>
     {{template "flash" .}}
     <form method="POST" action="/partner/login">
-      <label>Агентский код</label><input type="text" name="code" autocomplete="username" required autofocus style="text-transform:uppercase">
+      <label>Реферальный код</label><input type="text" name="code" autocomplete="username" required autofocus style="text-transform:uppercase">
       <label>Пароль</label><input type="password" name="password" autocomplete="current-password" required>
       <p><button class="btn" type="submit">Войти</button></p>
     </form>
   </div>
-  <p class="muted small">Пароль задаётся в приложении: Профиль → «Премиум-агент» → «Кабинет агента в браузере».</p>
+  <p class="muted small">Пароль задаётся в приложении: Профиль → «Партнёрская программа» → «Кабинет партнёра в браузере».</p>
 </main>
 {{end}}

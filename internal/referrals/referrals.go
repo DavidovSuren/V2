@@ -1,5 +1,6 @@
-// Package referrals — тарифы, скидки и комиссия премиум-агентов.
-// Прямой порт backend/lib/referrals.js.
+// Package referrals — тарифы и партнёрская программа: каждый подписчик
+// получает процент с оплат приглашённых им людей. Скидок для приглашённых
+// нет — они всегда платят полную цену.
 package referrals
 
 var Prices = map[string]int{
@@ -7,29 +8,46 @@ var Prices = map[string]int{
 	"premium888": 888,
 }
 
-const PremiumAgentCommissionPct = 50
+// TierOrder — порядок тарифов в интерфейсе (от младшего к старшему).
+var TierOrder = []string{"plus369", "premium888"}
 
-// Скидка для НОВОГО приглашённого зависит от того, сколько людей его
-// пригласивший уже успешно привёл к оплате (paidReferralsCount — на момент
-// оплаты этого нового человека, ДО текущей оплаты).
-// Примеры из ТЗ: 1–3 оплативших приглашённых -> 20%; >3 -> 35%; пригласил
-// 10 -> 11-й уже получает 50% (т.е. порог считается по факту "10 уже есть").
-func DiscountPctForReferrer(paidReferralsCount int) int {
-	if paidReferralsCount >= 10 {
-		return 50
-	}
-	if paidReferralsCount >= 4 {
-		return 35
-	}
-	return 20
+var TierNames = map[string]string{
+	"plus369":    "Plus",
+	"premium888": "Premium",
 }
 
-func PriceAfterDiscount(basePrice, discountPct int) int {
-	return int(float64(basePrice)*(100-float64(discountPct))/100 + 0.5)
+// BoostThreshold — сколько разных приглашённых должны оплатить подписку,
+// чтобы процент со следующих оплат вырос (с 11-го оплатившего).
+const BoostThreshold = 10
+
+// Rate — процент партнёра: базовый и повышенный (после BoostThreshold оплативших).
+type Rate struct {
+	Base    int
+	Boosted int
 }
 
-// CommissionAmount — доля держателя премиум-агентского кода с оплаты,
-// округление как Math.round в Node-версии (369 ₽ -> 185, а не 184).
-func CommissionAmount(pricePaid int) int {
-	return int(float64(pricePaid)*PremiumAgentCommissionPct/100 + 0.5)
+// Rates — процент по тарифу пригласившего на момент оплаты приглашённого.
+// Без активной подписки партнёрский доход не начисляется.
+var Rates = map[string]Rate{
+	"plus369":    {Base: 5, Boosted: 10},
+	"premium888": {Base: 20, Boosted: 50},
+}
+
+// CommissionPct — процент для пригласившего с тарифом referrerTier ("" или
+// "free" — нет подписки), у которого до этой оплаты уже оплачивали подписку
+// priorPaying разных приглашённых (платящий сейчас не считается).
+func CommissionPct(referrerTier string, priorPaying int) int {
+	rate, ok := Rates[referrerTier]
+	if !ok {
+		return 0
+	}
+	if priorPaying >= BoostThreshold {
+		return rate.Boosted
+	}
+	return rate.Base
+}
+
+// CommissionAmount — сумма в рублях, округление по математике (369 × 50% = 185).
+func CommissionAmount(pricePaid, pct int) int {
+	return int(float64(pricePaid)*float64(pct)/100 + 0.5)
 }

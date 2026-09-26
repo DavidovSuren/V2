@@ -12,15 +12,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"version20/internal/models"
+	"version20/internal/referrals"
 	"version20/internal/store"
 )
 
-// Кабинет агента (/partner/...) — отдельный веб-вход по агентскому коду и
-// паролю. Пароль агент задаёт в профиле Mini App (POST /agent/password).
+// Кабинет партнёра (/partner/...) — веб-версия кошелька партнёра: вход по
+// реферальному коду (или старому агентскому — он работает как реферальный)
+// и паролю. Пароль задаётся в профиле Mini App (POST /partner/password).
 // В cookie лежит "<user_id>-<отпечаток хеша пароля>": смена или сброс
-// пароля, как и отзыв кода, завершает все сессии кабинета.
+// пароля завершает все сессии кабинета.
 
-const minAgentPasswordLen = 8
+const minPartnerPasswordLen = 8
 
 func passwordFingerprint(hash string) string {
 	sum := sha256.Sum256([]byte(hash))
@@ -54,7 +56,7 @@ func (a *App) requirePartner(next http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 		}
-		if user == nil || !user.HasPremiumAgentCode() || hash == "" || passwordFingerprint(hash) != fp {
+		if user == nil || hash == "" || passwordFingerprint(hash) != fp {
 			a.PartnerSessions.ClearCookie(w)
 			http.Redirect(w, r, "/partner/login", http.StatusSeeOther)
 			return
@@ -64,7 +66,7 @@ func (a *App) requirePartner(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func (a *App) handlePartnerLoginShow(w http.ResponseWriter, r *http.Request) {
-	a.render(w, "panel/partner_login.html", AdminPage{Title: "Кабинет агента"})
+	a.render(w, "panel/partner_login.html", AdminPage{Title: "Кабинет партнёра"})
 }
 
 func (a *App) handlePartnerLoginSubmit(w http.ResponseWriter, r *http.Request) {
@@ -73,14 +75,14 @@ func (a *App) handlePartnerLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 	fail := func() {
 		time.Sleep(time.Second) // притормаживаем перебор
-		a.render(w, "panel/partner_login.html", AdminPage{Title: "Кабинет агента",
-			Error: "Неверный код или пароль. Пароль задаётся в профиле приложения, в блоке «Премиум-агент»."})
+		a.render(w, "panel/partner_login.html", AdminPage{Title: "Кабинет партнёра",
+			Error: "Неверный код или пароль. Пароль задаётся в профиле приложения, в блоке «Партнёрская программа»."})
 	}
 	if code == "" || password == "" || a.PartnerSessions == nil {
 		fail()
 		return
 	}
-	user, err := a.Store.GetUserByAgentCode(code)
+	user, err := a.Store.GetUserByReferralOrAgentCode(code)
 	if err != nil {
 		a.serverError(w, err)
 		return
@@ -116,15 +118,19 @@ type PartnerDashboardData struct {
 	PayingReferrals int
 	Referred        []store.ReferredRow
 	History         []store.WalletTx
+	RatePlus        referrals.Rate
+	RatePremium     referrals.Rate
+	BoostThreshold  int
 }
 
 func (a *App) handlePartnerDashboard(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(partnerCtxKey{}).(*models.User)
-	data := PartnerDashboardData{Name: user.Name, Code: user.PremiumAgentCode.String}
+	data := PartnerDashboardData{Name: user.Name, Code: user.ReferralCode.String,
+		RatePlus: referrals.Rates["plus369"], RatePremium: referrals.Rates["premium888"], BoostThreshold: referrals.BoostThreshold}
 	var err error
 	if data.Balance, err = a.Store.WalletBalance(user.ID); err == nil {
 		if data.PayingReferrals, err = a.Store.PayingReferralsCount(user.ID); err == nil {
-			if data.Referred, err = a.Store.AgentReferred(user.ID); err == nil {
+			if data.Referred, err = a.Store.PartnerReferred(user.ID); err == nil {
 				data.History, err = a.Store.WalletHistory(user.ID)
 			}
 		}
@@ -133,35 +139,32 @@ func (a *App) handlePartnerDashboard(w http.ResponseWriter, r *http.Request) {
 		a.serverError(w, err)
 		return
 	}
-	a.render(w, "panel/partner_dashboard.html", AdminPage{Title: "Кабинет агента", Content: data})
+	a.render(w, "panel/partner_dashboard.html", AdminPage{Title: "Кабинет партнёра", Content: data})
 }
 
-var agentPasswordErrors = map[string]string{
+var partnerPasswordMessages = map[string]string{
 	"short":    "Пароль должен быть не короче 8 символов",
 	"mismatch": "Пароли не совпадают",
 	"long":     "Пароль слишком длинный (максимум 72 байта)",
-	"ok":       "Пароль сохранён — входите в кабинет агента по коду и паролю",
+	"ok":       "Пароль сохранён — входи в кабинет партнёра по реферальному коду и паролю",
 }
 
-// handleAgentPasswordSet — агент в Mini App задаёт/меняет пароль кабинета.
-func (a *App) handleAgentPasswordSet(w http.ResponseWriter, r *http.Request) {
+// handlePartnerPasswordSet — пользователь в Mini App задаёт/меняет пароль
+// кабинета партнёра в браузере.
+func (a *App) handlePartnerPasswordSet(w http.ResponseWriter, r *http.Request) {
 	user := userFromCtx(r)
-	if !user.HasPremiumAgentCode() {
-		http.Redirect(w, r, "/profile", http.StatusSeeOther)
-		return
-	}
 	r.ParseForm()
 	password := r.FormValue("password")
-	if len([]rune(password)) < minAgentPasswordLen {
-		http.Redirect(w, r, "/profile?agent_pw=short#agent", http.StatusSeeOther)
+	if len([]rune(password)) < minPartnerPasswordLen {
+		http.Redirect(w, r, "/profile?partner_pw=short#partner", http.StatusSeeOther)
 		return
 	}
 	if len(password) > 72 { // предел bcrypt
-		http.Redirect(w, r, "/profile?agent_pw=long#agent", http.StatusSeeOther)
+		http.Redirect(w, r, "/profile?partner_pw=long#partner", http.StatusSeeOther)
 		return
 	}
 	if password != r.FormValue("password2") {
-		http.Redirect(w, r, "/profile?agent_pw=mismatch#agent", http.StatusSeeOther)
+		http.Redirect(w, r, "/profile?partner_pw=mismatch#partner", http.StatusSeeOther)
 		return
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -173,5 +176,5 @@ func (a *App) handleAgentPasswordSet(w http.ResponseWriter, r *http.Request) {
 		a.serverError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/profile?agent_pw=ok#agent", http.StatusSeeOther)
+	http.Redirect(w, r, "/profile?partner_pw=ok#partner", http.StatusSeeOther)
 }

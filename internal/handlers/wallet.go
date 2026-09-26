@@ -20,10 +20,6 @@ type WalletHistoryItem struct {
 
 func (a *App) handleWalletShow(w http.ResponseWriter, r *http.Request) {
 	user := userFromCtx(r)
-	if !user.HasPremiumAgentCode() {
-		http.Error(w, "Кошелёк доступен только держателям премиум-агентского кода", http.StatusForbidden)
-		return
-	}
 
 	balance, err := a.Store.WalletBalance(user.ID)
 	if err != nil {
@@ -47,16 +43,11 @@ func (a *App) handleWalletShow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.render(w, "wallet.html", WalletData{
-		Code: user.PremiumAgentCode.String, Balance: balance, PayingReferrals: paying, History: items,
+		Code: user.ReferralCode.String, Balance: balance, PayingReferrals: paying, History: items,
 		Message: map[string]string{"soon": withdrawSoonMsg}[r.URL.Query().Get("msg")],
 	})
 }
 
 func (a *App) handleWalletWithdraw(w http.ResponseWriter, r *http.Request) {
-	user := userFromCtx(r)
-	if !user.HasPremiumAgentCode() {
-		http.Error(w, "Кошелёк доступен только держателям премиум-агентского кода", http.StatusForbidden)
-		return
-	}
 	http.Redirect(w, r, "/wallet?msg=soon", http.StatusSeeOther)
 }

@@ -67,7 +67,7 @@ func TestAdminAccessWithoutDB(t *testing.T) {
 	}
 
 	withPanels(a)
-	for _, p := range []string{"/admin", "/admin/questions", "/admin/tasks", "/admin/users", "/admin/agents", "/admin/users/1"} {
+	for _, p := range []string{"/admin", "/admin/questions", "/admin/tasks", "/admin/users", "/admin/users/1"} {
 		if r := a.do(t, "GET", p, nil, ""); r.Location != "/admin/login" {
 			t.Errorf("%s без входа: %d %q", p, r.Code, r.Location)
 		}
@@ -76,7 +76,7 @@ func TestAdminAccessWithoutDB(t *testing.T) {
 	if r := a.do(t, "GET", "/admin", nil, "", a.session(testAdminLogin)); r.Location != "/admin/login" {
 		t.Errorf("сессия Mini App пустила в админку")
 	}
-	// Как и чужая подпись: cookie кабинета агента с тем же значением.
+	// Как и чужая подпись: cookie кабинета партнёра с тем же значением.
 	rec := httptest.NewRecorder()
 	a.PartnerSessions.SetCookie(rec, testAdminLogin)
 	pc := rec.Result().Cookies()[0]
@@ -84,13 +84,16 @@ func TestAdminAccessWithoutDB(t *testing.T) {
 	if r := a.do(t, "GET", "/admin", nil, "", pc); r.Location != "/admin/login" {
 		t.Errorf("подпись другой области пустила в админку")
 	}
-	if r := a.do(t, "POST", "/admin/agents/grant", nil, ""); r.Location != "/admin/login" {
+	if r := a.do(t, "POST", "/admin/users/1/reset-partner-password", nil, ""); r.Location != "/admin/login" {
 		t.Errorf("POST без входа: %d %q", r.Code, r.Location)
 	}
 	if r := a.do(t, "GET", "/partner", nil, ""); r.Location != "/partner/login" {
 		t.Errorf("/partner без входа: %d %q", r.Code, r.Location)
 	}
-	mustContain(t, a.do(t, "GET", "/partner/login", nil, "").Body, "Кабинет агента")
+	mustContain(t, a.do(t, "GET", "/partner/login", nil, "").Body, "Кабинет партнёра")
+	if r := a.do(t, "GET", "/admin/agents", nil, "", a.adminCookie()); r.Code == http.StatusOK && strings.Contains(r.Body, "Агенты") {
+		t.Error("раздел «Агенты» ещё существует")
+	}
 }
 
 func TestAdminLogin(t *testing.T) {
@@ -219,7 +222,7 @@ func TestAdminEditTasks(t *testing.T) {
 	}
 }
 
-func TestAdminUsersAndAgents(t *testing.T) {
+func TestAdminUsers(t *testing.T) {
 	a := withPanels(newDBApp(t))
 	u := a.newPlayer(t, "1", "")
 	a.exec(t, "UPDATE users SET username='ann' WHERE id=$1", u.ID)
@@ -244,68 +247,50 @@ func TestAdminUsersAndAgents(t *testing.T) {
 		t.Error("неизвестный тариф принят")
 	}
 
-	// Выдать агента по @username, повторно — ошибка.
-	if r := a.adminPost(t, "/admin/agents/grant", url.Values{"who": {"@ann2"}, "back": {"/admin/agents"}}); !strings.Contains(r.Location, "ok=") {
-		t.Fatalf("выдача кода: %q", r.Location)
-	}
-	code := a.user(t, "1").PremiumAgentCode.String
-	if len(code) != 8 {
-		t.Fatalf("код %q", code)
-	}
-	if r := a.adminPost(t, "/admin/agents/grant", url.Values{"user_id": {id}, "back": {"/admin/users/" + id}}); !strings.Contains(r.Location, "err=") || !strings.HasPrefix(r.Location, "/admin/users/") {
-		t.Errorf("повторная выдача: %q", r.Location)
-	}
-	if r := a.adminPost(t, "/admin/agents/grant", url.Values{"who": {"@ghost"}, "back": {"https://evil.example"}}); !strings.HasPrefix(r.Location, "/admin/agents?") {
-		t.Errorf("открытый редирект: %q", r.Location)
-	}
-	mustContain(t, a.adminGet(t, "/admin/agents").Body, code)
-
-	a.adminPost(t, "/admin/agents/"+id+"/revoke", nil)
-	if a.user(t, "1").HasPremiumAgentCode() {
-		t.Error("код не отозван")
-	}
+	// Карточка пользователя показывает партнёрские данные для всех.
+	mustContain(t, a.adminGet(t, "/admin/users/"+id).Body, "Партнёр", got.ReferralCode.String, "reset-partner-password")
 }
 
 func TestPartnerCabinet(t *testing.T) {
 	a := withPanels(newDBApp(t))
-	agent := a.newPlayer(t, "1", "")
+	partner := a.newPlayer(t, "1", "")
 	a.post(t, "1", "/subscribe", url.Values{"tier": {"premium888"}})
-	a.post(t, "1", "/agent/become", nil)
-	code := a.user(t, "1").PremiumAgentCode.String
+	code := partner.ReferralCode.String
 
-	// Приглашённый оплатил — агенту 444 ₽.
+	// Приглашённый оплатил Premium — партнёру 20% = 178 ₽.
 	a.newPlayer(t, "2", code)
 	a.post(t, "2", "/subscribe", url.Values{"tier": {"premium888"}})
 
 	// Пока пароль не задан — войти нельзя.
-	login := url.Values{"code": {strings.ToLower(code)}, "password": {"agent-pass-1"}}
+	login := url.Values{"code": {strings.ToLower(code)}, "password": {"partner-pass-1"}}
 	mustContain(t, formPost(t, a, "/partner/login", login).Body, "Неверный код или пароль")
 
-	// Пароль задаётся в профиле Mini App.
-	mustContain(t, a.get(t, "1", "/profile").Body, `action="/agent/password"`)
-	if r := a.post(t, "1", "/agent/password", url.Values{"password": {"short"}, "password2": {"short"}}); !strings.Contains(r.Location, "agent_pw=short") {
+	// Пароль задаётся в профиле Mini App — у любого пользователя.
+	mustContain(t, a.get(t, "1", "/profile").Body, `action="/partner/password"`)
+	if r := a.post(t, "1", "/partner/password", url.Values{"password": {"short"}, "password2": {"short"}}); !strings.Contains(r.Location, "partner_pw=short") {
 		t.Errorf("короткий пароль: %q", r.Location)
 	}
-	if r := a.post(t, "1", "/agent/password", url.Values{"password": {"agent-pass-1"}, "password2": {"agent-pass-2"}}); !strings.Contains(r.Location, "agent_pw=mismatch") {
+	if r := a.post(t, "1", "/partner/password", url.Values{"password": {"partner-pass-1"}, "password2": {"partner-pass-2"}}); !strings.Contains(r.Location, "partner_pw=mismatch") {
 		t.Errorf("несовпадение: %q", r.Location)
 	}
-	if r := a.post(t, "1", "/agent/password", url.Values{"password": {"agent-pass-1"}, "password2": {"agent-pass-1"}}); !strings.Contains(r.Location, "agent_pw=ok") {
+	if r := a.post(t, "1", "/partner/password", url.Values{"password": {"partner-pass-1"}, "password2": {"partner-pass-1"}}); !strings.Contains(r.Location, "partner_pw=ok") {
 		t.Fatalf("пароль: %q", r.Location)
-	}
-	// Не-агент задать пароль не может.
-	a.post(t, "2", "/agent/password", url.Values{"password": {"agent-pass-1"}, "password2": {"agent-pass-1"}})
-	if h, _ := a.Store.AgentPasswordHash(a.user(t, "2").ID); h != "" {
-		t.Error("не-агент задал пароль")
 	}
 
 	mustContain(t, formPost(t, a, "/partner/login", url.Values{"code": {code}, "password": {"wrong-pass"}}).Body, "Неверный код или пароль")
 	r := formPost(t, a, "/partner/login", login) // код в нижнем регистре тоже подходит
 	if r.Location != "/partner" || len(r.Cookies) == 0 {
-		t.Fatalf("вход агента: %d %q %s", r.Code, r.Location, r.Body)
+		t.Fatalf("вход партнёра: %d %q %s", r.Code, r.Location, r.Body)
 	}
 	pc := r.Cookies[0]
 	dash := a.do(t, "GET", "/partner", nil, "", pc)
-	mustContain(t, dash.Body, code, "444 ₽", "User 2", "premium888")
+	mustContain(t, dash.Body, code, "178 ₽", "User 2", "premium888", "Кабинет партнёра")
+
+	// Старый агентский код тоже подходит для входа.
+	a.Store.SetPremiumAgentCode(partner.ID, "AGENT01")
+	if r := formPost(t, a, "/partner/login", url.Values{"code": {"agent01"}, "password": {"partner-pass-1"}}); r.Location != "/partner" {
+		t.Errorf("вход по агентскому коду: %q", r.Location)
+	}
 
 	// Сессия кабинета не пускает в Mini App и админку.
 	mc := *pc
@@ -315,7 +300,7 @@ func TestPartnerCabinet(t *testing.T) {
 	}
 
 	// Сброс пароля админом завершает сессию кабинета.
-	a.adminPost(t, "/admin/agents/"+itoa(int(agent.ID))+"/reset-password", nil)
+	a.adminPost(t, "/admin/users/"+itoa(int(partner.ID))+"/reset-partner-password", nil)
 	if r := a.do(t, "GET", "/partner", nil, "", pc); r.Location != "/partner/login" {
 		t.Errorf("сессия пережила сброс пароля: %d %q", r.Code, r.Location)
 	}

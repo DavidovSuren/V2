@@ -29,16 +29,11 @@
     <p>Уровень {{.User.Level}} · XP {{.User.XP}} · выполнено {{.User.CompletedCount}}/365 · стрик {{.User.StreakCurrent}} (лучший {{.User.StreakBest}}) · пол {{.User.Gender.String}} · возраст {{.User.AgeGroup}} · зарегистрирован {{printf "%.10s" .User.CreatedAt}}</p>
   </div>
   <div class="card">
-    <h2>Агент</h2>
-    {{if .User.HasPremiumAgentCode}}
-      <p>Код <code>{{.User.PremiumAgentCode.String}}</code> · баланс {{.Balance}} ₽ · <a href="/admin/agents">все агенты</a></p>
-    {{else}}
-      <form method="POST" action="/admin/agents/grant">
-        <input type="hidden" name="user_id" value="{{.User.ID}}">
-        <input type="hidden" name="back" value="/admin/users/{{.User.ID}}">
-        <button class="btn sec" type="submit">Сделать агентом (выдать код)</button>
-      </form>
-    {{end}}
+    <h2>Партнёр</h2>
+    <p>Реферальный код <code>{{.User.ReferralCode.String}}</code>{{if .User.HasPremiumAgentCode}} · старый агентский код <code>{{.User.PremiumAgentCode.String}}</code> (работает как реферальный){{end}} · баланс {{.Balance}} ₽</p>
+    <form method="POST" action="/admin/users/{{.User.ID}}/reset-partner-password">
+      <button class="btn sec" type="submit">Сбросить пароль кабинета партнёра</button>
+    </form>
   </div>
   {{end}}
 </main>

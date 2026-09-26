@@ -117,13 +117,3 @@ func (s *Store) AddFriendship(userID, friendID int64, createdAt string) error {
 	`, userID, friendID, createdAt)
 	return err
 }
-
-func (s *Store) PriorPaidReferralsCount(referrerID int64) (int, error) {
-	var count int
-	err := s.DB.QueryRow(`
-		SELECT COUNT(DISTINCT r.referred_id)::int FROM referrals r
-		JOIN subscription_payments sp ON sp.user_id = r.referred_id
-		WHERE r.referrer_id = $1
-	`, referrerID).Scan(&count)
-	return count, err
-}

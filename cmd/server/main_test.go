@@ -55,7 +55,7 @@ func TestTemplatesParse(t *testing.T) {
 		"report.html", "wallet.html",
 		"panel/admin_login.html", "panel/admin_dashboard.html", "panel/admin_questions.html",
 		"panel/admin_tasks.html", "panel/admin_task_edit.html", "panel/admin_users.html",
-		"panel/admin_user_edit.html", "panel/admin_agents.html",
+		"panel/admin_user_edit.html",
 		"panel/partner_login.html", "panel/partner_dashboard.html",
 	} {
 		if tmpl[page] == nil {

@@ -176,6 +176,14 @@ CREATE TABLE IF NOT EXISTS tasks (
 -- Пароль кабинета агента (/partner), bcrypt.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS agent_password_hash TEXT;
 
+-- Партнёрская программа (этап 1): процент, по которому начислена комиссия,
+-- и идентификатор платежа Telegram — повторный successful_payment с тем же
+-- charge_id не создаёт вторую оплату.
+ALTER TABLE subscription_payments ADD COLUMN IF NOT EXISTS commission_pct INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE subscription_payments ADD COLUMN IF NOT EXISTS charge_id TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_charge ON subscription_payments(charge_id);
+CREATE INDEX IF NOT EXISTS idx_users_referred_by ON users(referred_by_user_id);
+
 CREATE INDEX IF NOT EXISTS idx_schedule_user ON user_schedule(user_id);
 CREATE INDEX IF NOT EXISTS idx_diary_user ON diary_entries(user_id);
 CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id);

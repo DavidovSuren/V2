@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
+	"time"
 
 	"version20/internal/auth"
 	"version20/internal/content"
@@ -32,8 +33,13 @@ type App struct {
 	AdminLogin    string
 	AdminPassword string
 	AdminSessions *auth.Sessions
-	// Кабинет агента (/partner): вход по агентскому коду и паролю.
+	// Кабинет партнёра (/partner): вход по реферальному коду и паролю.
 	PartnerSessions *auth.Sessions
+
+	// Now — источник времени (в тестах — фиксированная дата); nil — time.Now.
+	Now func() time.Time
+	// Notify — отправка сообщения от бота; nil — Bot API (если задан BOT_TOKEN).
+	Notify func(tgID, text string)
 }
 
 func (a *App) Questions() []models.Question {
@@ -136,10 +142,7 @@ func (a *App) Routes() http.Handler {
 
 	mux.HandleFunc("GET /wallet", a.requireOnboarded(a.handleWalletShow))
 	mux.HandleFunc("POST /wallet/withdraw", a.requireOnboarded(a.handleWalletWithdraw))
-	mux.HandleFunc("POST /agent/become", a.requireOnboarded(a.handleBecomeAgent))
-
-	mux.HandleFunc("POST /admin/grant-premium-agent", a.handleAdminGrantPremiumAgent)
-	mux.HandleFunc("POST /agent/password", a.requireOnboarded(a.handleAgentPasswordSet))
+	mux.HandleFunc("POST /partner/password", a.requireOnboarded(a.handlePartnerPasswordSet))
 
 	// Веб-админка (вне Telegram).
 	mux.HandleFunc("GET /admin/login", a.handleAdminLoginShow)
@@ -154,12 +157,9 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("GET /admin/users", a.requireAdmin(a.handleAdminUsers))
 	mux.HandleFunc("GET /admin/users/{id}", a.requireAdmin(a.handleAdminUserEdit))
 	mux.HandleFunc("POST /admin/users/{id}", a.requireAdmin(a.handleAdminUserSave))
-	mux.HandleFunc("GET /admin/agents", a.requireAdmin(a.handleAdminAgents))
-	mux.HandleFunc("POST /admin/agents/grant", a.requireAdmin(a.handleAdminAgentGrant))
-	mux.HandleFunc("POST /admin/agents/{id}/revoke", a.requireAdmin(a.handleAdminAgentRevoke))
-	mux.HandleFunc("POST /admin/agents/{id}/reset-password", a.requireAdmin(a.handleAdminAgentResetPassword))
+	mux.HandleFunc("POST /admin/users/{id}/reset-partner-password", a.requireAdmin(a.handleAdminPartnerResetPassword))
 
-	// Кабинет агента (вне Telegram).
+	// Кабинет партнёра (вне Telegram).
 	mux.HandleFunc("GET /partner/login", a.handlePartnerLoginShow)
 	mux.HandleFunc("POST /partner/login", a.handlePartnerLoginSubmit)
 	mux.HandleFunc("POST /partner/logout", a.handlePartnerLogout)
