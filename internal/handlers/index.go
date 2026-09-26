@@ -39,10 +39,6 @@ func (a *App) handleIndex(w http.ResponseWriter, r *http.Request) {
 		a.render(w, "welcome.html", WelcomeData{RefCode: refCodeFromCookie(r), Name: firstNameFromCookie(r)})
 		return
 	}
-	if needsTerms(user) {
-		a.renderTermsUpdate(w)
-		return
-	}
 	if !user.Gender.Valid {
 		http.Redirect(w, r, "/quiz/0", http.StatusSeeOther)
 		return

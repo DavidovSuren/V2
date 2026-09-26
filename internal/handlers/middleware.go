@@ -8,20 +8,9 @@ import (
 )
 
 // requireOnboarded — нужна сессия + пользователь уже прошёл приветствие
-// (но, возможно, ещё не анкету) и принял текущую редакцию соглашения.
-// Если что-то не так — на "/", он сам решит, что показать.
+// (но, возможно, ещё не анкету). Если что-то не так — на "/", он сам
+// решит, что показать (бутстрап / приветствие / анкету / главную).
 func (a *App) requireOnboarded(next http.HandlerFunc) http.HandlerFunc {
-	return a.requireSession(func(w http.ResponseWriter, r *http.Request) {
-		if needsTerms(userFromCtx(r)) {
-			a.renderTermsUpdate(w)
-			return
-		}
-		next(w, r)
-	})
-}
-
-// requireSession — сессия и зарегистрированный пользователь, без проверки соглашения.
-func (a *App) requireSession(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tgID, ok := a.Sessions.TgIDFromRequest(r)
 		if !ok {

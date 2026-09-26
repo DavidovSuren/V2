@@ -17,29 +17,21 @@ func TestOnboardingSavesTermsAcceptance(t *testing.T) {
 	}
 }
 
-func TestTermsUpdateScreen(t *testing.T) {
+// Экрана «Мы обновили соглашение» нет: проект запускается с этой редакцией,
+// уже зарегистрированные пользуются приложением без повторного согласия.
+func TestNoTermsUpdateScreen(t *testing.T) {
 	a := newDBApp(t)
 	a.newPlayer(t, "1", "")
-	a.exec(t, "UPDATE users SET terms_version='2020-01-01' WHERE tg_id='1'")
-
+	a.exec(t, "UPDATE users SET terms_version=NULL, terms_accepted_at=NULL WHERE tg_id='1'")
 	for _, p := range []string{"/", "/profile", "/wallet", "/plans"} {
 		r := a.get(t, "1", p)
-		if r.Code != 200 || !strings.Contains(r.Body, "Мы обновили соглашение") {
-			t.Errorf("%s со старой редакцией: %d %q", p, r.Code, r.Location)
+		if r.Code != 200 || strings.Contains(r.Body, "Мы обновили соглашение") {
+			t.Errorf("%s: %d %q", p, r.Code, r.Location)
 		}
 	}
-	if r := a.get(t, "1", "/terms"); !strings.Contains(r.Body, "Редакция от "+TermsVersion) {
-		t.Error("/terms закрыт экраном обновления")
+	if r := a.post(t, "1", "/terms/accept", url.Values{"terms": {"1"}}); r.Code == 303 {
+		t.Error("маршрут /terms/accept ещё существует")
 	}
-
-	mustContain(t, a.post(t, "1", "/terms/accept", url.Values{}).Body, "Мы обновили соглашение")
-	if r := a.post(t, "1", "/terms/accept", url.Values{"terms": {"1"}}); r.Location != "/" {
-		t.Fatalf("принятие: %d %q", r.Code, r.Location)
-	}
-	if u := a.user(t, "1"); u.TermsVersion.String != TermsVersion {
-		t.Errorf("версия: %v", u.TermsVersion)
-	}
-	mustNotContain(t, a.get(t, "1", "/").Body, "Мы обновили соглашение")
 }
 
 func TestTermsPageSections(t *testing.T) {
