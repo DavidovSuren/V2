@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Приветствие</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&amp;family=Playfair+Display:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0C0F}
+a{color:#D4B06A}a:hover{color:#E6C98C}
+.opt{display:flex;align-items:center;justify-content:center;height:48px;border-radius:14px;background:#17181D;border:1px solid rgba(255,255,255,0.08);font-size:15px;color:#F3F1EC;cursor:pointer}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #0F1014; color: #F3F1EC; font-family: 'Onest', sans-serif; padding: 72px 24px 40px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="width: 56px; height: 56px; border-radius: 18px; border: 1px solid rgba(212,176,106,0.45); display: flex; align-items: center; justify-content: center; color: #D4B06A; font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 600">2.0</div>
+<h1 style="margin: 0; font-family: 'Playfair Display', serif; font-size: 34px; line-height: 1.15; font-weight: 600">Новая версия себя за 365 дней</h1>
+<p style="margin: 0; font-size: 16px; line-height: 1.55; color: #9C988F">Одно действие в день. План под тебя по 8 направлениям жизни.</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 13px; color: #9C988F">Как к тебе обращаться</div>
+<div style="height: 52px; border-radius: 14px; background: #17181D; border: 1px solid rgba(212,176,106,0.45); display: flex; align-items: center; padding: 0 16px; font-size: 16px">Сурен</div>
+<div style="font-size: 12px; color: #8A867E">Взяли из Telegram — можно поменять</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 13px; color: #9C988F">Возраст</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<button class="opt" type="button">17–20</button>
+<button class="opt" type="button">21–25</button>
+<button class="opt" type="button" style="border-color: #D4B06A; background: rgba(212,176,106,0.12); color: #E6C98C">26–30</button>
+<button class="opt" type="button">31–35</button>
+<button class="opt" type="button">36–45</button>
+<button class="opt" type="button">45+</button>
+</div>
+</div>
+
+<div style="flex-grow: 1"></div>
+
+<div style="display: flex; flex-direction: column; gap: 14px">
+<label style="display: flex; align-items: flex-start; gap: 12px; font-size: 13px; line-height: 1.5; color: #C9C5BC; cursor: pointer">
+<span style="width: 22px; height: 22px; flex-shrink: 0; border-radius: 7px; background: #D4B06A; color: #1A1408; display: flex; align-items: center; justify-content: center"><svg class="i" viewBox="0 0 24 24" style="width: 15px; height: 15px; stroke-width: 2.4"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
+<span>Я принимаю <a href="#terms" style="text-decoration: underline">пользовательское соглашение</a> и даю согласие на обработку персональных данных</span>
+</label>
+<div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #9C988F">
+<svg class="i" viewBox="0 0 24 24" style="color: #D4B06A"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+<span>3 дня бесплатно. Без привязки карты.</span>
+</div>
+<a href="Main.dc.html" style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 16px; background: #F3EDE0; color: #121316; font-size: 16px; font-weight: 600; text-decoration: none">Начать — 21 вопрос, 3 минуты</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

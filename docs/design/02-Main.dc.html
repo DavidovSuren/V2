@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Сегодня</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&amp;family=Playfair+Display:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0C0F}
+a{color:#D4B06A}a:hover{color:#E6C98C}
+.card{background:#17181D;border:1px solid rgba(255,255,255,0.07);border-radius:20px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;font-size:13px;font-weight:500}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:16px;font-size:16px;font-weight:600;text-decoration:none;border:none;font-family:inherit;cursor:pointer}
+.nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:#8A867E;text-decoration:none;width:72px}
+.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #0F1014; color: #F3F1EC; font-family: 'Onest', sans-serif; position: relative; overflow: hidden; padding: 56px 20px 0; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 13px; color: #9C988F">Суббота, 26 сентября</div>
+<div style="font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 600">Сурен, день 47</div>
+</div>
+<div class="pill" style="background: rgba(232,120,74,0.14); color: #F2A27E; height: 36px; padding: 0 14px; font-size: 15px">
+<svg class="i" viewBox="0 0 24 24" style="width: 18px; height: 18px"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.2 1-3.6 2-4.5.3 1.6 1.2 2.5 2.2 2.5C11.2 8.5 11 5.8 12 3z"/></svg>12 дней</div>
+</div>
+
+<div style="display: flex; align-items: center; justify-content: space-between; background: rgba(212,176,106,0.10); border: 1px solid rgba(212,176,106,0.28); border-radius: 14px; padding: 10px 14px; font-size: 13px; color: #E6C98C">
+<span>Пробный период: осталось 2 дня</span>
+<a href="Plans.dc.html" style="font-weight: 600; text-decoration: none">Тарифы</a>
+</div>
+
+<div class="card" style="padding: 22px 20px 20px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<span class="pill" style="background: #22242B; color: #C9C5BC">Стиль · 10 минут</span>
+<a href="#why" aria-label="Почему я это делаю" style="color: #9C988F; display: flex"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.3 2.4c-.5.2-.8.6-.8 1.1V14"/><path d="M12 17.2v.1"/></svg></a>
+</div>
+<div style="font-family: 'Playfair Display', serif; font-size: 23px; line-height: 1.3; font-weight: 500">Разбери одну полку шкафа и отложи вещи, которые не носил год</div>
+<div style="font-size: 14px; line-height: 1.55; color: #9C988F">Меньше вещей — быстрее утро и увереннее образ.</div>
+<div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px">
+<a class="btn" href="Done.dc.html" style="background: #F3EDE0; color: #121316">
+<svg class="i" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></svg>Сделал</a>
+<a class="btn" href="#skip" style="height: 44px; background: transparent; color: #9C988F; font-weight: 500; font-size: 15px">Перенести на завтра</a>
+</div>
+</div>
+
+<div style="display: flex; gap: 6px">
+<div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: #8A867E">Пн<div style="width: 100%; height: 6px; border-radius: 3px; background: #D4B06A"></div></div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: #8A867E">Вт<div style="width: 100%; height: 6px; border-radius: 3px; background: #D4B06A"></div></div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: #8A867E">Ср<div style="width: 100%; height: 6px; border-radius: 3px; background: #D4B06A"></div></div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: #8A867E">Чт<div style="width: 100%; height: 6px; border-radius: 3px; background: #D4B06A"></div></div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: #8A867E">Пт<div style="width: 100%; height: 6px; border-radius: 3px; background: #D4B06A"></div></div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: #F3F1EC; font-weight: 600">Сб<div style="width: 100%; height: 6px; border-radius: 3px; border: 1px dashed #D4B06A; box-sizing: border-box"></div></div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: #8A867E">Вс<div style="width: 100%; height: 6px; border-radius: 3px; background: #26282F"></div></div>
+</div>
+
+<div class="card" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; letter-spacing: 0.08em; color: #8A867E">ЦИТАТА ДНЯ</div>
+<div style="font-family: 'Playfair Display', serif; font-size: 18px; line-height: 1.45; font-style: italic">«Порядок в вещах начинается с решения, что тебе больше не нужно»</div>
+</div>
+
+<div style="display: flex; gap: 10px">
+<div class="card" style="flex-grow: 1; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 12px; color: #8A867E">Уровень</div>
+<div style="font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 600">12</div>
+</div>
+<div class="card" style="flex-grow: 1; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 12px; color: #8A867E">Опыт</div>
+<div style="font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 600">1 240</div>
+</div>
+<div class="card" style="flex-grow: 1; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 12px; color: #8A867E">Пройдено</div>
+<div style="font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 600">13%</div>
+</div>
+</div>
+
+<nav class="nav" style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; padding: 10px 12px 26px; box-sizing: border-box; display: flex; justify-content: space-around; background: #0F1014; border-top: 1px solid rgba(255,255,255,0.06)">
+<a href="Main.dc.html" style="color: #F3F1EC"><svg class="i" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>Сегодня</a>
+<a href="Path.dc.html"><svg class="i" viewBox="0 0 24 24"><path d="M4 20V11"/><path d="M10 20V5"/><path d="M16 20v-7"/><path d="M21 20H3"/></svg>Путь</a>
+<a href="Friends.dc.html"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18.5 14.8c1.6.8 2.6 2.6 3 5.2"/></svg>Друзья</a>
+<a href="Profile.dc.html"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.2-6 8-6s7 2 8 6"/></svg>Я</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
