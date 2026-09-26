@@ -1,21 +1,47 @@
 {{define "content"}}
-<h1>Прогресс</h1>
+<h1 class="page-title">Твой путь</h1>
+
+<div class="card level-card">
+  <div class="level-ring">
+    <svg width="84" height="84" viewBox="0 0 84 84" aria-hidden="true">
+      <circle cx="42" cy="42" r="36" fill="none" class="ring-track" stroke-width="7"/>
+      <circle cx="42" cy="42" r="36" fill="none" class="ring-fill" stroke-width="7" stroke-linecap="round"
+              stroke-dasharray="{{.RingDash}}" stroke-dashoffset="{{.RingOffset}}" transform="rotate(-90 42 42)"/>
+    </svg>
+    <div class="level-ring-num">{{.Level}}</div>
+  </div>
+  <div>
+    <div class="level-title">Уровень {{.Level}} из 100</div>
+    <div class="subtitle" style="margin:0">{{.CompletedCount}} из {{.TotalTasks}} заданий · лучший стрик {{.StreakBest}}</div>
+    <div class="gold-text">{{if ge .Level 100}}Алмаз получен{{else}}В конце пути — алмаз{{end}}</div>
+  </div>
+</div>
+
 <div class="card">
+  <div class="section-label" style="margin:0 0 12px">Направления</div>
   {{range .Categories}}
-  <div class="category-item">
-    <div class="category-name">{{.Name}}</div>
-    <div class="category-bar">
-      <div class="progress-bar"><div class="progress-fill" style="width:{{.Pct}}%"></div></div>
-    </div>
-    <div class="category-pct">{{.Pct}}%</div>
+  <div class="dir-row">
+    <span class="dir-name">{{.Name}}</span>
+    <div class="dir-bar"><div style="width:{{.Pct}}%"></div></div>
+    <span class="dir-pct">{{.Pct}}%</span>
   </div>
   {{end}}
 </div>
-<div class="card">
-  <div class="flex justify-between mb-8"><span>Уровень</span><strong>{{.Level}}</strong></div>
-  <div class="flex justify-between mb-8"><span>XP</span><strong>{{.XP}}</strong></div>
-  <div class="flex justify-between mb-8"><span>Выполнено заданий</span><strong>{{.CompletedCount}} / {{.TotalTasks}}</strong></div>
-  <div class="flex justify-between"><span>Текущий STREAK</span><strong>{{.StreakCurrent}} дней{{if gt .StreakCurrent 0}} 🔥{{end}}</strong></div>
+
+<div class="card stat-line">
+  <div><div class="subtitle" style="margin:0">Опыт</div><div class="stat-value">{{digits .XP}}</div></div>
+  <div><div class="subtitle" style="margin:0">Стрик</div><div class="stat-value">{{.StreakCurrent}} дн.</div></div>
 </div>
+
+<div class="section-label" id="awards">Награды · {{.AwardsUnlocked}} из {{len .Awards}}</div>
+<div class="awards-grid">
+  {{range .Awards}}
+  <div class="award{{if .Unlocked}} award-on tone-{{.Tone}}{{end}}" title="{{.Desc}}">
+    <div class="medal">{{template "icon" .Icon}}</div>
+    <span>{{.Name}}</span>
+  </div>
+  {{end}}
+</div>
+
 {{template "nav" "progress"}}
 {{end}}

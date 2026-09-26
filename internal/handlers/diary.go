@@ -123,7 +123,7 @@ func (a *App) handleDiarySubmit(w http.ResponseWriter, r *http.Request) {
 		if reachedLevel100 {
 			redirectURL = "/?celebrate=level100"
 		} else if len(unlocked) > 0 {
-			redirectURL = "/?celebrate=" + unlocked[0]
+			redirectURL = "/?celebrate=" + unlocked[len(unlocked)-1]
 		}
 		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 		return

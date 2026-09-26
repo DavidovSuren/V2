@@ -77,7 +77,7 @@
 </dialog>
 {{else if .Celebrate}}
 <dialog id="modal-celebrate" data-autoshow="1">
-  <div class="icon-big">{{.Celebrate.Icon}}</div>
+  <div class="medal-big tone-{{.Celebrate.Tone}}">{{template "icon" .Celebrate.Icon}}</div>
   <div class="modal-title text-center">{{.Celebrate.Name}}</div>
   <p style="margin-bottom:20px;text-align:center;color:var(--tg-hint-color)">{{.Celebrate.Desc}}</p>
   <button class="btn btn-primary" type="button" data-close-dialog>Отлично!</button>

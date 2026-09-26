@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"version20/internal/db"
 	"version20/internal/leveling"
 	"version20/internal/models"
 	"version20/internal/quotes"
@@ -154,7 +155,7 @@ func TestDiaryCompletesTask(t *testing.T) {
 	}
 
 	r := a.post(t, "1", "/diary", url.Values{"emoji": {"4"}, "note": {"сделал"}})
-	if r.Location != "/" {
+	if r.Location != "/?celebrate=first" {
 		t.Fatalf("diary: %d %q", r.Code, r.Location)
 	}
 	u = a.user(t, "1")
@@ -204,7 +205,7 @@ func TestStreakXPAndAchievement(t *testing.T) {
 	if u.StreakCurrent != 7 || u.StreakBest != 7 || u.XP != 50+15 {
 		t.Errorf("стрик/XP: streak=%d best=%d xp=%d", u.StreakCurrent, u.StreakBest, u.XP)
 	}
-	mustContain(t, a.do(t, "GET", r.Location, nil, "", a.session("1")).Body, `data-autoshow="1"`, "7 ДНЕЙ")
+	mustContain(t, a.do(t, "GET", r.Location, nil, "", a.session("1")).Body, `data-autoshow="1"`, "7 дней", `href="#i-flame"`)
 
 	// Разрыв больше дня обнуляет стрик до 1. Сегодняшние записи переносим
 	// в прошлое, иначе вторая запись дневника за день упрётся в PK.
@@ -216,8 +217,10 @@ func TestStreakXPAndAchievement(t *testing.T) {
 		t.Errorf("после перерыва: streak=%d best=%d", u.StreakCurrent, u.StreakBest)
 	}
 
-	ach := a.get(t, "1", "/achievements").Body
-	mustContain(t, ach, "7 ДНЕЙ")
+	if r := a.get(t, "1", "/achievements"); r.Code != 301 || r.Location != "/progress#awards" {
+		t.Errorf("/achievements: %d %q", r.Code, r.Location)
+	}
+	mustContain(t, a.get(t, "1", "/progress").Body, `id="awards"`, "Награды · 2 из 10", `award award-on tone-flame" title="7 дней подряд без пропусков"`)
 }
 
 func TestSkipKeepsTaskAndResetsStreak(t *testing.T) {
@@ -593,12 +596,12 @@ func TestPromo100LVL(t *testing.T) {
 
 	// Всё открыто на 100%: прогресс, все направления, алмаз у иконки.
 	progress := a.get(t, "1", "/progress").Body
-	mustContain(t, progress, "365 / 365", itoa(leveling.FullYearXP()), "365 дней")
+	mustContain(t, progress, "365 из 365 заданий", Digits(leveling.FullYearXP()), "365 дн.", "Уровень 100 из 100", "Алмаз получен", "Награды · 10 из 10")
 	mustNotContain(t, progress, ">0%<")
 	mustContain(t, a.get(t, "1", "/").Body, "diamond-badge", "100%")
 	mustContain(t, a.get(t, "1", "/profile").Body, "diamond-badge", "<strong>100</strong>")
-	if n := a.count(t, "SELECT COUNT(*) FROM achievements WHERE user_id=$1", u.ID); n != 8 {
-		t.Errorf("достижений %d, want 8", n)
+	if n := a.count(t, "SELECT COUNT(*) FROM achievements WHERE user_id=$1", u.ID); n != 10 {
+		t.Errorf("наград %d, want 10", n)
 	}
 	if n := a.count(t, "SELECT COUNT(*) FROM user_schedule WHERE user_id=$1 AND status='done'", u.ID); n != 365 {
 		t.Errorf("план выполнен: %d/365", n)
@@ -684,5 +687,25 @@ func TestQuoteOfTheDayOnHome(t *testing.T) {
 	mustContain(t, home, "Цитата дня", template.HTMLEscapeString(want))
 	if a.get(t, "1", "/").Body != home {
 		t.Error("главная (и цитата) меняется при обновлении")
+	}
+}
+
+// Тем, кто выполнял задания до появления «Первого шага» и «Уровня 10»,
+// награды досеиваются при старте (миграция идемпотентна).
+func TestNewAwardsBackfilled(t *testing.T) {
+	a := newDBApp(t)
+	u := a.newPlayer(t, "1", "")
+	a.exec(t, "UPDATE users SET completed_count=40, level=10 WHERE id=$1", u.ID)
+	a.newPlayer(t, "2", "")
+	for i := 0; i < 2; i++ {
+		if err := db.Migrate(a.Store.DB); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := a.count(t, "SELECT COUNT(*) FROM achievements WHERE user_id=$1 AND code IN ('first','lvl10')", u.ID); n != 2 {
+		t.Errorf("досеяно %d, want 2", n)
+	}
+	if n := a.count(t, "SELECT COUNT(*) FROM achievements WHERE user_id=$1", a.user(t, "2").ID); n != 0 {
+		t.Errorf("новичку досеяно %d", n)
 	}
 }

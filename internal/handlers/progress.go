@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"math"
 	"net/http"
 
 	"version20/internal/achievements"
@@ -14,6 +15,12 @@ type CategoryProgress struct {
 	Total int
 }
 
+type AchievementItem struct {
+	achievements.Meta
+	Unlocked bool
+}
+
+// ProgressData — экран «Путь» (макет 04): уровень, направления и награды.
 type ProgressData struct {
 	Level          int
 	XP             int
@@ -22,12 +29,17 @@ type ProgressData struct {
 	StreakCurrent  int
 	StreakBest     int
 	Categories     []CategoryProgress
+	Awards         []AchievementItem
+	AwardsUnlocked int
+	RingDash       float64 // длина окружности кольца уровня
+	RingOffset     float64
 }
+
+const ringRadius = 36
 
 func (a *App) handleProgress(w http.ResponseWriter, r *http.Request) {
 	user := userFromCtx(r)
-	progressPct, level := leveling.ProgressFromCompleted(user.CompletedCount)
-	_ = progressPct
+	_, level := leveling.ProgressFromCompleted(user.CompletedCount)
 
 	doneRows, err := a.Store.DoneCountsByCategory(user.ID)
 	if err != nil {
@@ -48,34 +60,34 @@ func (a *App) handleProgress(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	a.render(w, "progress.html", ProgressData{
-		Level: level, XP: user.XP, CompletedCount: user.CompletedCount,
-		TotalTasks: leveling.TotalTasks, StreakCurrent: user.StreakCurrent,
-		StreakBest: user.StreakBest, Categories: categories,
-	})
-}
-
-type AchievementItem struct {
-	achievements.Meta
-	Unlocked bool
-}
-
-func (a *App) handleAchievements(w http.ResponseWriter, r *http.Request) {
-	user := userFromCtx(r)
 	rows, err := a.Store.UserAchievements(user.ID)
 	if err != nil {
 		a.serverError(w, err)
 		return
 	}
-	unlockedSet := map[string]bool{}
+	unlocked := map[string]bool{}
 	for _, row := range rows {
-		unlockedSet[row.Code] = true
+		unlocked[row.Code] = true
 	}
 
-	items := make([]AchievementItem, 0, len(achievements.Metas))
+	dash := 2 * math.Pi * ringRadius
+	data := ProgressData{
+		Level: level, XP: user.XP, CompletedCount: user.CompletedCount,
+		TotalTasks: leveling.TotalTasks, StreakCurrent: user.StreakCurrent,
+		StreakBest: user.StreakBest, Categories: categories,
+		RingDash: math.Round(dash*10) / 10, RingOffset: math.Round(dash*(1-float64(level)/100)*10) / 10,
+	}
 	for _, m := range achievements.Metas {
-		items = append(items, AchievementItem{Meta: m, Unlocked: unlockedSet[m.Code]})
+		data.Awards = append(data.Awards, AchievementItem{Meta: m, Unlocked: unlocked[m.Code]})
+		if unlocked[m.Code] {
+			data.AwardsUnlocked++
+		}
 	}
 
-	a.render(w, "achievements.html", items)
+	a.render(w, "progress.html", data)
+}
+
+// handleAchievements — награды теперь на экране «Путь».
+func (a *App) handleAchievements(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/progress#awards", http.StatusMovedPermanently)
 }

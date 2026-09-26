@@ -211,6 +211,14 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS payout_card_last4 TEXT;
 ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'income';
 ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS withdrawal_id INTEGER REFERENCES withdrawals(id);
 
+-- Награды «Первый шаг» и «Уровень 10» (этап 7) — тем, кто уже их заслужил.
+INSERT INTO achievements (user_id, code, unlocked_at)
+  SELECT id, 'first', created_at FROM users WHERE completed_count >= 1
+  ON CONFLICT (user_id, code) DO NOTHING;
+INSERT INTO achievements (user_id, code, unlocked_at)
+  SELECT id, 'lvl10', created_at FROM users WHERE level >= 10
+  ON CONFLICT (user_id, code) DO NOTHING;
+
 CREATE INDEX IF NOT EXISTS idx_schedule_user ON user_schedule(user_id);
 CREATE INDEX IF NOT EXISTS idx_diary_user ON diary_entries(user_id);
 CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id);

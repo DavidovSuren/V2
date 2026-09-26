@@ -28,7 +28,7 @@
       <div style="flex:1;min-width:0">
         <div class="list-name">{{.Name}}{{if eq .ID $.MeID}} <span class="list-sub">(ты)</span>{{end}}</div>
         {{if $.PremiumView}}
-        <div class="list-sub">{{if .Username.Valid}}@{{.Username.String}} · {{end}}🔥 {{.Streak}}{{range .BadgeIcons}} {{.}}{{end}}</div>
+        <div class="list-sub">{{if .Username.Valid}}@{{.Username.String}} · {{end}}<span class="streak-mini">{{template "icon" "flame"}}{{.Streak}}</span>{{range .BadgeIcons}}<span class="badge-mini">{{template "icon" .}}</span>{{end}}</div>
         {{end}}
       </div>
       {{if $.PremiumView}}<div class="list-level">Ур. {{.Level}}</div>
