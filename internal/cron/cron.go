@@ -11,6 +11,7 @@ import (
 	"github.com/robfig/cron/v3"
 
 	"version20/internal/leveling"
+	"version20/internal/quotes"
 	"version20/internal/reports"
 	"version20/internal/store"
 	"version20/internal/telegram"
@@ -61,6 +62,7 @@ func dailyReminder(s *store.Store, botToken string) {
 			continue
 		}
 		telegram.SendMessage(botToken, u.TgID, "⏰ Напоминание Version 2.0\n\nСегодняшнее действие:\n"+row.Text+
+			"\n\nЦитата дня: «"+quotes.ForUser(u.TgID, today, row.Category)+"»"+
 			"\n\nОткрой приложение и отметь, выполнил(а) ли ты его.")
 	}
 }

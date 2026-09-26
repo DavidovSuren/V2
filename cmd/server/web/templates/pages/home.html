@@ -54,6 +54,13 @@
   {{end}}
 </div>
 
+{{if .Quote}}
+<div class="card quote-card">
+  <div class="section-label" style="margin:0 0 8px">Цитата дня</div>
+  <div class="quote-text">«{{.Quote}}»</div>
+</div>
+{{end}}
+
 <div class="card text-center">
   <div style="font-size:13px;color:var(--tg-hint-color);margin-bottom:8px">Ты через 365 дней</div>
   <div style="height:140px;background:var(--tg-secondary-bg-color);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--tg-hint-color)">

@@ -226,3 +226,4 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
 .invite-title { font-weight: 600; color: #B08A43; }
 .btn-gold-sm { display: inline-flex; align-items: center; height: 38px; padding: 0 14px; border-radius: 12px; background: #D4B06A; color: #1A1408; font-weight: 600; text-decoration: none; }
 .btn-link { font-size: 13px; text-decoration: none; }
+.quote-text { font-style: italic; font-size: 17px; line-height: 1.45; }

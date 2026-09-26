@@ -7,6 +7,7 @@ import (
 	"version20/internal/achievements"
 	"version20/internal/leveling"
 	"version20/internal/models"
+	"version20/internal/quotes"
 	"version20/internal/reports"
 	"version20/internal/subscription"
 )
@@ -25,6 +26,7 @@ type HomeData struct {
 	CelebrateLevel100 bool
 	Diamond           bool // уровень 100 — алмаз у иконки профиля
 	TrialDaysLeft     int  // > 0 — идёт пробный период без подписки
+	Quote             string
 }
 
 func (a *App) renderHome(w http.ResponseWriter, r *http.Request, user *models.User) {
@@ -54,9 +56,11 @@ func (a *App) renderHome(w http.ResponseWriter, r *http.Request, user *models.Us
 		}
 	}
 
+	today := a.now().In(reports.MoscowLocation()).Format("2006-01-02")
 	if user.DayIndex >= 365 {
 		data.Finished = true
 		data.DayLabel = "Путь пройден полностью"
+		data.Quote = quotes.ForUser(user.TgID, today, "")
 		a.render(w, "home.html", data)
 		return
 	}
@@ -70,6 +74,7 @@ func (a *App) renderHome(w http.ResponseWriter, r *http.Request, user *models.Us
 	data.TaskText = row.Text
 	data.TaskWhy = row.Why
 	data.DayLabel = dayLabel(user.CompletedCount)
+	data.Quote = quotes.ForUser(user.TgID, today, row.Category)
 
 	a.render(w, "home.html", data)
 }

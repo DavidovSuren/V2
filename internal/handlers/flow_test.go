@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"html/template"
 	"net/http"
 	"net/url"
 	"strings"
@@ -9,6 +10,7 @@ import (
 
 	"version20/internal/leveling"
 	"version20/internal/models"
+	"version20/internal/quotes"
 	"version20/internal/reports"
 	"version20/internal/scheduler"
 )
@@ -669,5 +671,18 @@ func TestWeeklyReportAndLogout(t *testing.T) {
 	c := cookieByName(r.Cookies, "v2_session")
 	if r.Location != "/" || c == nil || c.MaxAge >= 0 {
 		t.Errorf("logout: %q %v", r.Location, c)
+	}
+}
+
+func TestQuoteOfTheDayOnHome(t *testing.T) {
+	a := newDBApp(t)
+	u := a.newPlayer(t, "1", "")
+	row, _ := a.Store.GetScheduleRow(u.ID, 0)
+	today := reports.TodayMoscow()
+	want := quotes.ForUser("1", today, row.Category)
+	home := a.get(t, "1", "/").Body
+	mustContain(t, home, "Цитата дня", template.HTMLEscapeString(want))
+	if a.get(t, "1", "/").Body != home {
+		t.Error("главная (и цитата) меняется при обновлении")
 	}
 }
