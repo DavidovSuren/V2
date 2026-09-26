@@ -14,12 +14,18 @@ import (
 // answers — ответы по question id (без вопроса 0 про пол), значения — либо
 // число (scale, как строка или float64), либо строка варианта (single).
 func ComputeCategoryWeights(answers map[int]string) map[string]float64 {
+	return ComputeCategoryWeightsFor(models.Questions, answers)
+}
+
+// ComputeCategoryWeightsFor — то же по заданному списку вопросов (например,
+// отредактированному в админке).
+func ComputeCategoryWeightsFor(questions []models.Question, answers map[int]string) map[string]float64 {
 	scores := map[string][]float64{}
 	for _, cat := range models.Categories {
 		scores[cat] = nil
 	}
 
-	for _, q := range models.Questions {
+	for _, q := range questions {
 		if !q.Diagnostic || q.Category == "" {
 			continue
 		}

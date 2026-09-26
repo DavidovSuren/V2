@@ -1,0 +1,14 @@
+{{define "content"}}
+<main class="login">
+  <div class="card">
+    <h1>Вход в админку</h1>
+    {{template "flash" .}}
+    <form method="POST" action="/admin/login">
+      <label>Логин</label><input type="text" name="login" autocomplete="username" required autofocus>
+      <label>Пароль</label><input type="password" name="password" autocomplete="current-password" required>
+      <p><button class="btn" type="submit">Войти</button></p>
+    </form>
+  </div>
+  <p class="muted small">Агент? <a href="/partner/login">Вход в кабинет агента</a></p>
+</main>
+{{end}}

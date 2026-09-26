@@ -23,32 +23,34 @@ type QuizPageData struct {
 }
 
 func (a *App) handleQuizShow(w http.ResponseWriter, r *http.Request) {
+	qs := a.Questions()
 	n, err := strconv.Atoi(r.PathValue("n"))
-	if err != nil || n < 0 || n >= len(models.Questions) {
+	if err != nil || n < 0 || n >= len(qs) {
 		http.Redirect(w, r, "/quiz/0", http.StatusSeeOther)
 		return
 	}
 	user := userFromCtx(r)
-	q := models.Questions[n]
+	q := qs[n]
 
 	answer, _ := a.Store.GetQuizAnswer(user.ID, q.ID)
 
 	a.render(w, "quiz.html", QuizPageData{
-		Index: n, Total: len(models.Questions),
-		PctWidth: (n + 1) * 100 / len(models.Questions),
+		Index: n, Total: len(qs),
+		PctWidth: (n + 1) * 100 / len(qs),
 		Question: q, Answer: answer,
-		IsFirst: n == 0, IsLast: n == len(models.Questions)-1,
+		IsFirst: n == 0, IsLast: n == len(qs)-1,
 	})
 }
 
 func (a *App) handleQuizSubmit(w http.ResponseWriter, r *http.Request) {
+	qs := a.Questions()
 	n, err := strconv.Atoi(r.PathValue("n"))
-	if err != nil || n < 0 || n >= len(models.Questions) {
+	if err != nil || n < 0 || n >= len(qs) {
 		http.Redirect(w, r, "/quiz/0", http.StatusSeeOther)
 		return
 	}
 	user := userFromCtx(r)
-	q := models.Questions[n]
+	q := qs[n]
 
 	r.ParseForm()
 	answer := strings.TrimSpace(r.FormValue("answer"))
@@ -62,7 +64,7 @@ func (a *App) handleQuizSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if n < len(models.Questions)-1 {
+	if n < len(qs)-1 {
 		http.Redirect(w, r, "/quiz/"+strconv.Itoa(n+1), http.StatusSeeOther)
 		return
 	}
@@ -71,8 +73,9 @@ func (a *App) handleQuizSubmit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) finishQuiz(w http.ResponseWriter, r *http.Request, user *models.User) {
+	qs := a.Questions()
 	answers := map[int]string{}
-	for _, q := range models.Questions {
+	for _, q := range qs {
 		val, err := a.Store.GetQuizAnswer(user.ID, q.ID)
 		if err != nil || val == "" {
 			http.Redirect(w, r, "/quiz/0", http.StatusSeeOther)
@@ -87,7 +90,7 @@ func (a *App) finishQuiz(w http.ResponseWriter, r *http.Request, user *models.Us
 		return
 	}
 
-	weights := scheduler.ComputeCategoryWeights(answers)
+	weights := scheduler.ComputeCategoryWeightsFor(qs, answers)
 	bank := a.TaskBankFor(gender)
 	schedule := scheduler.BuildSchedule(bank, weights)
 

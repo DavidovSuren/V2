@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"version20/internal/auth"
+	"version20/internal/content"
 	"version20/internal/models"
 	"version20/internal/store"
 )
@@ -22,6 +23,24 @@ type App struct {
 	BotToken    string
 	AdminTgID   string
 	DevFakeAuth bool
+
+	// Content — вопросы и задания из БД (редактируются в админке). Если nil,
+	// используются встроенные models.Questions и TasksMale/TasksFemale.
+	Content *content.Cache
+
+	// Админка (/admin): вход по ADMIN_LOGIN/ADMIN_PASSWORD; пустые — вход выключен.
+	AdminLogin    string
+	AdminPassword string
+	AdminSessions *auth.Sessions
+	// Кабинет агента (/partner): вход по агентскому коду и паролю.
+	PartnerSessions *auth.Sessions
+}
+
+func (a *App) Questions() []models.Question {
+	if a.Content != nil {
+		return a.Content.Questions()
+	}
+	return models.Questions
 }
 
 // render выполняет layout.html для конкретной страницы (см. cmd/server/main.go
@@ -41,6 +60,9 @@ func (a *App) render(w http.ResponseWriter, page string, data any) {
 }
 
 func (a *App) TaskBankFor(gender string) []models.Task {
+	if a.Content != nil {
+		return a.Content.TaskBank(gender)
+	}
 	switch gender {
 	case "male":
 		return a.TasksMale
@@ -114,8 +136,34 @@ func (a *App) Routes() http.Handler {
 
 	mux.HandleFunc("GET /wallet", a.requireOnboarded(a.handleWalletShow))
 	mux.HandleFunc("POST /wallet/withdraw", a.requireOnboarded(a.handleWalletWithdraw))
+	mux.HandleFunc("POST /agent/become", a.requireOnboarded(a.handleBecomeAgent))
 
 	mux.HandleFunc("POST /admin/grant-premium-agent", a.handleAdminGrantPremiumAgent)
+	mux.HandleFunc("POST /agent/password", a.requireOnboarded(a.handleAgentPasswordSet))
+
+	// Веб-админка (вне Telegram).
+	mux.HandleFunc("GET /admin/login", a.handleAdminLoginShow)
+	mux.HandleFunc("POST /admin/login", a.handleAdminLoginSubmit)
+	mux.HandleFunc("POST /admin/logout", a.handleAdminLogout)
+	mux.HandleFunc("GET /admin", a.requireAdmin(a.handleAdminDashboard))
+	mux.HandleFunc("GET /admin/questions", a.requireAdmin(a.handleAdminQuestions))
+	mux.HandleFunc("POST /admin/questions/{id}", a.requireAdmin(a.handleAdminQuestionSave))
+	mux.HandleFunc("GET /admin/tasks", a.requireAdmin(a.handleAdminTasks))
+	mux.HandleFunc("GET /admin/tasks/{bank}/{id}", a.requireAdmin(a.handleAdminTaskEdit))
+	mux.HandleFunc("POST /admin/tasks/{bank}/{id}", a.requireAdmin(a.handleAdminTaskSave))
+	mux.HandleFunc("GET /admin/users", a.requireAdmin(a.handleAdminUsers))
+	mux.HandleFunc("GET /admin/users/{id}", a.requireAdmin(a.handleAdminUserEdit))
+	mux.HandleFunc("POST /admin/users/{id}", a.requireAdmin(a.handleAdminUserSave))
+	mux.HandleFunc("GET /admin/agents", a.requireAdmin(a.handleAdminAgents))
+	mux.HandleFunc("POST /admin/agents/grant", a.requireAdmin(a.handleAdminAgentGrant))
+	mux.HandleFunc("POST /admin/agents/{id}/revoke", a.requireAdmin(a.handleAdminAgentRevoke))
+	mux.HandleFunc("POST /admin/agents/{id}/reset-password", a.requireAdmin(a.handleAdminAgentResetPassword))
+
+	// Кабинет агента (вне Telegram).
+	mux.HandleFunc("GET /partner/login", a.handlePartnerLoginShow)
+	mux.HandleFunc("POST /partner/login", a.handlePartnerLoginSubmit)
+	mux.HandleFunc("POST /partner/logout", a.handlePartnerLogout)
+	mux.HandleFunc("GET /partner", a.requirePartner(a.handlePartnerDashboard))
 
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServerFS(a.StaticFS)))
 

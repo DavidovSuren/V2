@@ -12,8 +12,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"version20/internal/auth"
+	"version20/internal/content"
 	"version20/internal/cron"
 	"version20/internal/db"
 	"version20/internal/handlers"
@@ -21,7 +23,7 @@ import (
 	"version20/internal/store"
 )
 
-//go:embed web/templates/layout.html web/templates/partials/*.html web/templates/pages/*.html
+//go:embed web/templates/layout.html web/templates/partials/*.html web/templates/pages/*.html web/templates/panel/*.html
 var templatesFS embed.FS
 
 //go:embed web/static
@@ -39,12 +41,17 @@ func main() {
 	adminTgID := os.Getenv("ADMIN_TG_ID")
 	sessionSecret := getenv("SESSION_SECRET", "dev-insecure-secret-change-me")
 	devFakeAuth := os.Getenv("DEV_ALLOW_FAKE_AUTH") == "true"
+	adminLogin := os.Getenv("ADMIN_LOGIN")
+	adminPassword := os.Getenv("ADMIN_PASSWORD")
 
 	if sessionSecret == "dev-insecure-secret-change-me" {
 		log.Println("[server] SESSION_SECRET не задан — используется небезопасный дефолт (только для разработки).")
 	}
 	if botToken == "" {
 		log.Println("[server] BOT_TOKEN не задан — уведомления и сообщения бота отключены.")
+	}
+	if adminLogin == "" || adminPassword == "" {
+		log.Println("[server] ADMIN_LOGIN/ADMIN_PASSWORD не заданы — веб-админка /admin выключена.")
 	}
 	if adminTgID == "" {
 		log.Println("[server] ADMIN_TG_ID не задан — выдача премиум-агентских кодов недоступна.")
@@ -63,6 +70,11 @@ func main() {
 	tasksMale := loadTasks(dataFS, "data/tasks_male.json")
 	tasksFemale := loadTasks(dataFS, "data/tasks_female.json")
 
+	cache, err := content.Load(st, models.Questions, tasksMale, tasksFemale)
+	if err != nil {
+		log.Fatalf("[server] не удалось загрузить вопросы/задания из БД: %v", err)
+	}
+
 	tmpl := loadTemplates(templatesFS)
 
 	staticSub, err := fs.Sub(staticFS, "web/static")
@@ -70,9 +82,15 @@ func main() {
 		log.Fatalf("[server] не удалось подготовить статику: %v", err)
 	}
 
+	sessions := auth.NewSessions(sessionSecret)
+	sessions.Insecure = devFakeAuth
+	// Ключ админ-сессии зависит от пароля: смена ADMIN_PASSWORD разлогинивает всех.
+	adminSessions := sessions.Scoped("admin:"+adminPassword, "v2_admin", 12*time.Hour)
+	partnerSessions := sessions.Scoped("partner", "v2_partner", 30*24*time.Hour)
+
 	app := &handlers.App{
 		Store:       st,
-		Sessions:    auth.NewSessions(sessionSecret),
+		Sessions:    sessions,
 		Tmpl:        tmpl,
 		StaticFS:    staticSub,
 		TasksMale:   tasksMale,
@@ -80,6 +98,12 @@ func main() {
 		BotToken:    botToken,
 		AdminTgID:   adminTgID,
 		DevFakeAuth: devFakeAuth,
+
+		Content:         cache,
+		AdminLogin:      adminLogin,
+		AdminPassword:   adminPassword,
+		AdminSessions:   adminSessions,
+		PartnerSessions: partnerSessions,
 	}
 
 	cron.Start(st, botToken)
@@ -155,6 +179,24 @@ func loadTemplates(fsys embed.FS) map[string]*template.Template {
 			log.Fatalf("[server] ошибка разбора шаблона %s: %v", p, err)
 		}
 		out[name] = t
+	}
+
+	// Веб-панели (админка, кабинет агента) — свой layout без Telegram SDK.
+	// Ключ — "panel/<файл>", чтобы не пересекаться со страницами Mini App.
+	panelPages, err := fs.Glob(fsys, "web/templates/panel/*.html")
+	if err != nil {
+		log.Fatalf("[server] ошибка поиска шаблонов панелей: %v", err)
+	}
+	for _, p := range panelPages {
+		name := filepath.Base(p)
+		if name == "layout.html" {
+			continue
+		}
+		t, err := template.New(name).Funcs(templateFuncs()).ParseFS(fsys, "web/templates/panel/layout.html", p)
+		if err != nil {
+			log.Fatalf("[server] ошибка разбора шаблона %s: %v", p, err)
+		}
+		out["panel/"+name] = t
 	}
 	return out
 }

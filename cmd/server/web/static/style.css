@@ -52,7 +52,7 @@ h2 { font-size: 18px; font-weight: 600; margin-bottom: 12px; }
 
 .input-group { margin-bottom: 16px; }
 label { display: block; font-size: 14px; margin-bottom: 6px; color: var(--tg-hint-color); }
-input[type="text"], textarea, input[type="file"] {
+input[type="text"], input[type="password"], textarea, input[type="file"] {
   width: 100%; padding: 12px 14px; border: 1.5px solid var(--tg-hint-color);
   border-radius: var(--radius-sm); background: var(--tg-bg-color); color: var(--tg-text-color);
   font-size: 16px; outline: none;
@@ -143,6 +143,7 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
 .avatar-icon .diamond-badge { position: absolute; bottom: -4px; right: -6px; font-size: 0.55em; line-height: 1; }
 .list-name { font-weight: 600; font-size: 14px; }
 .list-level { font-size: 12px; font-weight: 700; color: var(--tg-button-color); background: color-mix(in srgb, var(--tg-button-color) 12%, transparent); padding: 3px 8px; border-radius: 8px; white-space: nowrap; }
+.list-sub { font-size: 12px; color: var(--tg-hint-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .upsell-banner { background: color-mix(in srgb, var(--tg-button-color) 10%, transparent); border: 1px dashed var(--tg-button-color); border-radius: var(--radius-sm); padding: 12px; font-size: 13px; margin-bottom: 16px; text-align: center; }
 

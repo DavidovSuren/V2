@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"version20/internal/achievements"
 	"version20/internal/store"
 	"version20/internal/subscription"
 )
@@ -15,6 +16,8 @@ type CommunityData struct {
 	Upsell       string
 	People       []store.PersonRow
 	AddFriendErr string
+	MeID         int64
+	HiddenCount  int // сколько участников скрыто от не-Premium
 }
 
 // handleCommunity — раздел "Сообщество". Виден всем, но уровень/бейджи/
@@ -24,7 +27,7 @@ func (a *App) handleCommunity(w http.ResponseWriter, r *http.Request) {
 	tab := r.URL.Query().Get("tab")
 	premium := subscription.IsPremiumActive(user.SubscriptionTier, user.SubscriptionExpiresAt)
 
-	data := CommunityData{Tab: tab, PremiumView: premium, AddFriendErr: friendAddErrors[r.URL.Query().Get("err")]}
+	data := CommunityData{Tab: tab, PremiumView: premium, MeID: user.ID, AddFriendErr: friendAddErrors[r.URL.Query().Get("err")]}
 
 	if tab == "friends" {
 		if !premium {
@@ -34,7 +37,7 @@ func (a *App) handleCommunity(w http.ResponseWriter, r *http.Request) {
 		}
 		people, err := a.Store.FriendsRaw(user.ID)
 		if err == nil {
-			people, err = a.Store.AttachBadges(people)
+			people, err = attachBadgeIcons(a.Store, people)
 		}
 		if err != nil {
 			a.serverError(w, err)
@@ -51,17 +54,39 @@ func (a *App) handleCommunity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if premium {
-		people, err = a.Store.AttachBadges(people)
+		people, err = attachBadgeIcons(a.Store, people)
 		if err != nil {
 			a.serverError(w, err)
 			return
 		}
+		data.People = people
 	} else {
-		data.Upsell = "Оформи подписку 888 ₽/мес, чтобы видеть уровень и достижения всех участников 🔒"
+		// Без Premium видно только себя — остальные участники скрыты.
+		for _, p := range people {
+			if p.ID == user.ID {
+				data.People = append(data.People, p)
+			}
+		}
+		data.HiddenCount = len(people) - len(data.People)
+		data.Upsell = "Оформи подписку 888 ₽/мес, чтобы видеть всех участников, их уровень, стрик и достижения 🔒"
 	}
-	data.People = people
 
 	a.render(w, "community.html", data)
+}
+
+func attachBadgeIcons(st *store.Store, people []store.PersonRow) ([]store.PersonRow, error) {
+	people, err := st.AttachBadges(people)
+	if err != nil {
+		return nil, err
+	}
+	for i := range people {
+		for _, code := range people[i].Badges {
+			if icon := achievements.MetaByCode(code).Icon; icon != "" {
+				people[i].BadgeIcons = append(people[i].BadgeIcons, icon)
+			}
+		}
+	}
+	return people, nil
 }
 
 // Тексты ошибок — те же, что отдавал POST /api/friends/add в Node-версии.
@@ -72,6 +97,10 @@ var friendAddErrors = map[string]string{
 
 func (a *App) handleFriendAdd(w http.ResponseWriter, r *http.Request) {
 	user := userFromCtx(r)
+	if !subscription.IsPremiumActive(user.SubscriptionTier, user.SubscriptionExpiresAt) {
+		http.Redirect(w, r, "/community?tab=friends", http.StatusSeeOther)
+		return
+	}
 	r.ParseForm()
 	username := strings.TrimPrefix(strings.TrimSpace(r.FormValue("username")), "@")
 

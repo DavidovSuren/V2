@@ -1,0 +1,23 @@
+{{define "content"}}
+{{template "admin_header" "questions"}}
+<main>
+  <h1>Вопросы анкеты</h1>
+  {{template "flash" .}}
+  <p class="muted">Можно менять текст вопроса и подписи вариантов — по одному на строку, от «лучшего» состояния к «худшему»: порядок влияет на вес направления в плане. Изменения увидят те, кто проходит анкету сейчас и позже.</p>
+  {{range .Content}}
+  <div class="card" id="q{{.ID}}">
+    <form method="POST" action="/admin/questions/{{.ID}}">
+      <div><b>#{{.ID}}</b> <span class="tag">{{.Type}}</span> {{if .Category}}<span class="tag">{{.Category}}</span>{{end}} {{if .Diagnostic}}<span class="tag">влияет на план</span>{{end}}</div>
+      <label>Текст вопроса</label>
+      <textarea name="text" required>{{.Text}}</textarea>
+      {{if eq .Type "single"}}
+      <label>Варианты ответа{{if eq .ID 0}} — только подписи, порядок: мужчина, женщина{{end}}</label>
+      <textarea name="options" rows="4">{{range $i, $o := .Options}}{{if $i}}
+{{end}}{{$o.Label}}{{end}}</textarea>
+      {{end}}
+      <p><button class="btn" type="submit">Сохранить</button></p>
+    </form>
+  </div>
+  {{end}}
+</main>
+{{end}}

@@ -47,22 +47,30 @@ func (a *App) handleAdminGrantPremiumAgent(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	code, err := a.issuePremiumAgentCode(target.ID)
+	if err != nil {
+		a.serverError(w, err)
+		return
+	}
+	w.Write([]byte("код выдан: " + code))
+}
+
+// issuePremiumAgentCode генерирует уникальный 8-символьный агентский код и
+// закрепляет его за пользователем.
+func (a *App) issuePremiumAgentCode(userID int64) (string, error) {
 	code := codes.Generate(8)
 	for {
 		exists, err := a.Store.PremiumAgentCodeExists(code)
 		if err != nil {
-			a.serverError(w, err)
-			return
+			return "", err
 		}
 		if !exists {
 			break
 		}
 		code = codes.Generate(8)
 	}
-
-	if err := a.Store.SetPremiumAgentCode(target.ID, code); err != nil {
-		a.serverError(w, err)
-		return
+	if err := a.Store.SetPremiumAgentCode(userID, code); err != nil {
+		return "", err
 	}
-	w.Write([]byte("код выдан: " + code))
+	return code, nil
 }

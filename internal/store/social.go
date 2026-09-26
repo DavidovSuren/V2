@@ -7,16 +7,20 @@ import (
 )
 
 type PersonRow struct {
-	ID      int64
-	Name    string
-	Gender  sql.NullString
-	Level   int
-	Badges  []string
-	Diamond bool
+	ID       int64
+	Name     string
+	Username sql.NullString
+	Gender   sql.NullString
+	Level    int
+	Streak   int
+	Badges   []string
+	// BadgeIcons — иконки бейджей для отображения (заполняет handler).
+	BadgeIcons []string
+	Diamond    bool
 }
 
 func (s *Store) AllUsersRanked() ([]PersonRow, error) {
-	rows, err := s.DB.Query(`SELECT id, name, gender, level FROM users ORDER BY level DESC, created_at ASC`)
+	rows, err := s.DB.Query(`SELECT id, name, username, gender, level, streak_current FROM users ORDER BY level DESC, created_at ASC`)
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +29,7 @@ func (s *Store) AllUsersRanked() ([]PersonRow, error) {
 	var out []PersonRow
 	for rows.Next() {
 		var p PersonRow
-		if err := rows.Scan(&p.ID, &p.Name, &p.Gender, &p.Level); err != nil {
+		if err := rows.Scan(&p.ID, &p.Name, &p.Username, &p.Gender, &p.Level, &p.Streak); err != nil {
 			return nil, err
 		}
 		out = append(out, p)
@@ -35,7 +39,7 @@ func (s *Store) AllUsersRanked() ([]PersonRow, error) {
 
 func (s *Store) FriendsRaw(userID int64) ([]PersonRow, error) {
 	rows, err := s.DB.Query(`
-		SELECT DISTINCT u.id, u.name, u.gender, u.level FROM users u
+		SELECT DISTINCT u.id, u.name, u.username, u.gender, u.level, u.streak_current FROM users u
 		WHERE u.id IN (
 			SELECT referred_id FROM referrals WHERE referrer_id = $1
 			UNION
@@ -53,7 +57,7 @@ func (s *Store) FriendsRaw(userID int64) ([]PersonRow, error) {
 	var out []PersonRow
 	for rows.Next() {
 		var p PersonRow
-		if err := rows.Scan(&p.ID, &p.Name, &p.Gender, &p.Level); err != nil {
+		if err := rows.Scan(&p.ID, &p.Name, &p.Username, &p.Gender, &p.Level, &p.Streak); err != nil {
 			return nil, err
 		}
 		out = append(out, p)

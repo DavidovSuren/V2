@@ -16,7 +16,7 @@
   {{range .Tiers}}
   <div class="tier-card{{if eq .Tier "premium888"}} tier-premium{{end}}">
     <div style="font-weight:600">{{if eq .Tier "plus369"}}Version 2.0 Plus{{else}}Version 2.0 Premium 💎{{end}}</div>
-    <div class="tier-desc">{{if eq .Tier "premium888"}}+ «Сообщество»: видно уровень и значки всех участников, раздел «Контакты»{{else}}Полный доступ к игре и заданиям{{end}}</div>
+    <div class="tier-desc">{{if eq .Tier "premium888"}}+ видно всех участников (уровень, стрик, значки), «Контакты» и возможность стать агентом{{else}}Полный доступ к игре и заданиям{{end}}</div>
     <div class="tier-price">
       {{if gt .DiscountPct 0}}<span class="old-price">{{.BasePrice}} ₽</span>{{.PricePaid}} ₽/мес <span style="font-size:12px;color:var(--tg-button-color)">(-{{.DiscountPct}}%)</span>{{else}}{{.PricePaid}} ₽/мес{{end}}
     </div>
@@ -32,6 +32,30 @@
   <div style="font-weight:600;margin-bottom:8px">Пригласи друга</div>
   <div class="subtitle" style="margin-bottom:8px">Чем больше друзей оплатили подписку по твоей ссылке — тем больше скидка у следующих приглашённых (до 50%).</div>
   <div class="ref-code-box"><span>{{.ReferralCode}}</span></div>
+</div>
+
+<div class="card">
+  <div style="font-weight:600;margin-bottom:8px">💼 Премиум-агент</div>
+  {{if .AgentError}}<div class="toast mb-8">{{.AgentError}}</div>{{end}}
+  {{if .HasPremiumAgent}}
+  <div class="subtitle" style="margin-bottom:8px">Твой агентский код — приглашённые по нему платят полную цену, а тебе в кошелёк идёт 50% с каждой их оплаты.</div>
+  <div class="ref-code-box"><span>{{.AgentCode}}</span></div>
+  <div id="agent" style="font-weight:600;margin:12px 0 4px">Кабинет агента в браузере</div>
+  <div class="subtitle" style="margin-bottom:8px">{{if .HasAgentPassword}}Пароль задан. Вход: адрес приложения + <b>/partner</b>, агентский код и пароль. Можно сменить пароль ниже.{{else}}Задай пароль, чтобы входить в кабинет агента (адрес приложения + <b>/partner</b>) по коду и паролю.{{end}}</div>
+  {{if .AgentPasswordMsg}}<div class="toast mb-8">{{.AgentPasswordMsg}}</div>{{end}}
+  <form method="POST" action="/agent/password">
+    <input type="password" name="password" placeholder="Пароль (от 8 символов)" autocomplete="new-password" required>
+    <input type="password" name="password2" placeholder="Повтори пароль" autocomplete="new-password" required class="mt-8">
+    <button class="btn btn-secondary mt-8" type="submit">{{if .HasAgentPassword}}Сменить пароль{{else}}Задать пароль{{end}}</button>
+  </form>
+  {{else if .PremiumActive}}
+  <div class="subtitle" style="margin-bottom:8px">Получи агентский код и зарабатывай 50% с каждой оплаты приглашённых по нему.</div>
+  <form method="POST" action="/agent/become">
+    <button class="btn btn-primary" type="submit">Стать агентом</button>
+  </form>
+  {{else}}
+  <div class="subtitle" style="margin:0">🔒 Стать агентом и получать 50% с оплат приглашённых можно с подпиской Premium 888 ₽/мес.</div>
+  {{end}}
 </div>
 
 <div class="card">

@@ -1,0 +1,39 @@
+{{define "content"}}
+{{template "admin_header" "tasks"}}
+<main>
+  <h1>Задания и советы</h1>
+  {{template "flash" .}}
+  {{with .Content}}
+  <form method="GET" action="/admin/tasks" class="card row">
+    <div><label>Банк</label>
+      <select name="bank">
+        <option value="male"{{if eq .Bank "male"}} selected{{end}}>Мужской</option>
+        <option value="female"{{if eq .Bank "female"}} selected{{end}}>Женский</option>
+      </select></div>
+    <div><label>Направление</label>
+      <select name="cat"><option value="">Все</option>
+        {{$cur := .Category}}{{range .Categories}}<option{{if eq . $cur}} selected{{end}}>{{.}}</option>{{end}}
+      </select></div>
+    <div><label>Поиск</label><input type="text" name="q" value="{{.Query}}" placeholder="текст или id"></div>
+    <button class="btn" type="submit">Показать</button>
+  </form>
+  <p class="muted">Найдено {{len .Tasks}} из {{.Total}}. Правки попадают только в планы новых пользователей — уже построенные планы хранят свою копию текста.</p>
+  <div class="card table-wrap">
+    <table>
+      <tr><th>id</th><th>Направление</th><th>Задание</th><th>Почему</th></tr>
+      {{$bank := .Bank}}
+      {{range .Tasks}}
+      <tr>
+        <td><a href="/admin/tasks/{{$bank}}/{{.ID}}"><code>{{.ID}}</code></a></td>
+        <td>{{.Category}}</td>
+        <td>{{.Text}}</td>
+        <td class="muted small">{{.Why}}</td>
+      </tr>
+      {{else}}
+      <tr><td colspan="4" class="muted">Ничего не найдено</td></tr>
+      {{end}}
+    </table>
+  </div>
+  {{end}}
+</main>
+{{end}}

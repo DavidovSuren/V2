@@ -8,6 +8,7 @@ import (
 	"version20/internal/leveling"
 	"version20/internal/models"
 	"version20/internal/referrals"
+	"version20/internal/subscription"
 )
 
 type TierQuote struct {
@@ -28,6 +29,11 @@ type ProfileData struct {
 	StreakCurrent     int
 	ReferralCode      string
 	HasPremiumAgent   bool
+	AgentCode         string
+	PremiumActive     bool
+	AgentError        string
+	AgentPasswordMsg  string
+	HasAgentPassword  bool
 	Tiers             []TierQuote
 	PromoError        string
 	Diamond           bool
@@ -65,15 +71,34 @@ func (a *App) handleProfile(w http.ResponseWriter, r *http.Request) {
 		tierLabel = "Бесплатно"
 	}
 
+	hasAgentPassword := false
+	if user.HasPremiumAgentCode() {
+		h, err := a.Store.AgentPasswordHash(user.ID)
+		if err != nil {
+			a.serverError(w, err)
+			return
+		}
+		hasAgentPassword = h != ""
+	}
+
 	a.render(w, "profile.html", ProfileData{
 		Name: user.Name, AgeGroup: user.AgeGroup, Gender: user.Gender.String,
 		SubscriptionLabel: tierLabel, ProgressPct: progressPct, Level: level, XP: user.XP,
 		StreakCurrent: user.StreakCurrent, ReferralCode: user.ReferralCode.String,
-		HasPremiumAgent: user.HasPremiumAgentCode(),
-		Tiers:           a.tierQuotes(user),
-		PromoError:      r.URL.Query().Get("promo_err"),
-		Diamond:         level >= 100,
+		HasPremiumAgent:  user.HasPremiumAgentCode(),
+		AgentCode:        user.PremiumAgentCode.String,
+		PremiumActive:    subscription.IsPremiumActive(user.SubscriptionTier, user.SubscriptionExpiresAt),
+		AgentError:       agentErrors[r.URL.Query().Get("agent_err")],
+		AgentPasswordMsg: agentPasswordErrors[r.URL.Query().Get("agent_pw")],
+		HasAgentPassword: hasAgentPassword,
+		Tiers:            a.tierQuotes(user),
+		PromoError:       r.URL.Query().Get("promo_err"),
+		Diamond:          level >= 100,
 	})
+}
+
+var agentErrors = map[string]string{
+	"premium": "Стать агентом можно только с активной подпиской Premium 888 ₽/мес",
 }
 
 func (a *App) handleSubscribe(w http.ResponseWriter, r *http.Request) {

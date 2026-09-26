@@ -1,0 +1,45 @@
+{{define "content"}}
+{{template "admin_header" "users"}}
+<main>
+  <p><a href="/admin/users">← к списку</a></p>
+  {{with .Content}}<h1>{{.User.Name}} <span class="muted small">id {{.User.ID}} · tg_id {{.User.TgID}}</span></h1>{{end}}
+  {{template "flash" .}}
+  {{with .Content}}
+  <div class="card">
+    <h2>Профиль и подписка</h2>
+    <form method="POST" action="/admin/users/{{.User.ID}}">
+      <div class="row">
+        <div><label>Имя</label><input type="text" name="name" value="{{.User.Name}}" required></div>
+        <div><label>@username</label><input type="text" name="username" value="{{.User.Username.String}}"></div>
+      </div>
+      <div class="row">
+        <div><label>Тариф</label>
+          <select name="tier">
+            <option value="free"{{if eq .User.SubscriptionTier "free"}} selected{{end}}>free</option>
+            <option value="plus369"{{if eq .User.SubscriptionTier "plus369"}} selected{{end}}>plus369</option>
+            <option value="premium888"{{if eq .User.SubscriptionTier "premium888"}} selected{{end}}>premium888</option>
+          </select></div>
+        <div><label>Действует до (включительно)</label><input type="date" name="expires" value="{{.ExpiresDate}}"></div>
+      </div>
+      <p><button class="btn" type="submit">Сохранить</button></p>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Прогресс</h2>
+    <p>Уровень {{.User.Level}} · XP {{.User.XP}} · выполнено {{.User.CompletedCount}}/365 · стрик {{.User.StreakCurrent}} (лучший {{.User.StreakBest}}) · пол {{.User.Gender.String}} · возраст {{.User.AgeGroup}} · зарегистрирован {{printf "%.10s" .User.CreatedAt}}</p>
+  </div>
+  <div class="card">
+    <h2>Агент</h2>
+    {{if .User.HasPremiumAgentCode}}
+      <p>Код <code>{{.User.PremiumAgentCode.String}}</code> · баланс {{.Balance}} ₽ · <a href="/admin/agents">все агенты</a></p>
+    {{else}}
+      <form method="POST" action="/admin/agents/grant">
+        <input type="hidden" name="user_id" value="{{.User.ID}}">
+        <input type="hidden" name="back" value="/admin/users/{{.User.ID}}">
+        <button class="btn sec" type="submit">Сделать агентом (выдать код)</button>
+      </form>
+    {{end}}
+  </div>
+  {{end}}
+</main>
+{{end}}

@@ -412,9 +412,10 @@ func TestCommunityVisibility(t *testing.T) {
 	a.exec(t, "UPDATE users SET level=100, name='Звезда' WHERE id=$1", star.ID)
 	a.exec(t, "INSERT INTO achievements (user_id, code, unlocked_at) VALUES ($1,'lvl100','x')", star.ID)
 
+	// Без Premium других участников не видно — только себя и счётчик скрытых.
 	free := a.get(t, "1", "/community").Body
-	mustContain(t, free, "Звезда", "Оформи подписку 888")
-	mustNotContain(t, free, "Ур. 100", "💎")
+	mustContain(t, free, "Оформи подписку 888", "Ещё 1 участников скрыто")
+	mustNotContain(t, free, "Звезда", "Ур. 100", "💎")
 
 	friends := a.get(t, "1", "/community?tab=friends").Body
 	mustContain(t, friends, "доступен только с подпиской 888")
@@ -427,11 +428,49 @@ func TestCommunityVisibility(t *testing.T) {
 	a.post(t, "1", "/subscribe", url.Values{"tier": {"premium888"}})
 	prem := a.get(t, "1", "/community").Body
 	mustContain(t, prem, "Звезда", "Ур. 100", "💎")
-	mustNotContain(t, prem, "Оформи подписку 888")
+	mustNotContain(t, prem, "Оформи подписку 888", "скрыто")
 
 	// Истёкшая подписка снова прячет уровни.
 	a.exec(t, "UPDATE users SET subscription_expires_at=$1 WHERE tg_id='1'", time.Now().Add(-time.Hour).UTC().Format(time.RFC3339))
 	mustNotContain(t, a.get(t, "1", "/community").Body, "Ур. 100")
+}
+
+func TestBecomeAgent(t *testing.T) {
+	a := newDBApp(t)
+	a.newPlayer(t, "1", "")
+
+	// Без Premium — отказ с понятной ошибкой в профиле.
+	if r := a.post(t, "1", "/agent/become", nil); r.Location != "/profile?agent_err=premium" {
+		t.Fatalf("free: redirect %q", r.Location)
+	}
+	mustContain(t, a.get(t, "1", "/profile?agent_err=premium").Body, "только с активной подпиской Premium")
+	if u := a.user(t, "1"); u.HasPremiumAgentCode() {
+		t.Fatal("free не должен стать агентом")
+	}
+
+	a.post(t, "1", "/subscribe", url.Values{"tier": {"premium888"}})
+	mustContain(t, a.get(t, "1", "/profile").Body, `action="/agent/become"`)
+	if r := a.post(t, "1", "/agent/become", nil); r.Location != "/wallet" {
+		t.Fatalf("premium: redirect %q", r.Location)
+	}
+	u := a.user(t, "1")
+	if len(u.PremiumAgentCode.String) != 8 {
+		t.Fatalf("код: %q", u.PremiumAgentCode.String)
+	}
+	mustContain(t, a.get(t, "1", "/profile").Body, u.PremiumAgentCode.String)
+
+	// Повторный запрос не меняет код.
+	a.post(t, "1", "/agent/become", nil)
+	if a.user(t, "1").PremiumAgentCode.String != u.PremiumAgentCode.String {
+		t.Fatal("код изменился")
+	}
+
+	// Приглашённый по коду приносит 50% в кошелёк.
+	a.newPlayer(t, "2", u.PremiumAgentCode.String)
+	a.post(t, "2", "/subscribe", url.Values{"tier": {"premium888"}})
+	if bal, _ := a.Store.WalletBalance(u.ID); bal != 444 {
+		t.Fatalf("баланс агента %d, want 444", bal)
+	}
 }
 
 func TestContactsAndAddFriend(t *testing.T) {

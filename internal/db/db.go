@@ -147,6 +147,35 @@ CREATE TABLE IF NOT EXISTS promo_redemptions (
   PRIMARY KEY (user_id, code)
 );
 
+-- Редактируемый из админки контент. При старте сюда досеиваются
+-- вопросы из кода и задания из data/*.json (только отсутствующие id),
+-- дальше источник правды — БД. Правки заданий влияют только на новые планы:
+-- user_schedule хранит копию текста.
+CREATE TABLE IF NOT EXISTS questions (
+  id INTEGER PRIMARY KEY,
+  category TEXT NOT NULL DEFAULT '',
+  text TEXT NOT NULL,
+  type TEXT NOT NULL,
+  diagnostic BOOLEAN NOT NULL,
+  options_json TEXT NOT NULL DEFAULT '[]',
+  updated_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS tasks (
+  bank TEXT NOT NULL CHECK(bank IN ('male','female')),
+  id TEXT NOT NULL,
+  position INTEGER NOT NULL,
+  category TEXT NOT NULL,
+  gender TEXT NOT NULL,
+  text TEXT NOT NULL,
+  why TEXT NOT NULL,
+  updated_at TEXT,
+  PRIMARY KEY (bank, id)
+);
+
+-- Пароль кабинета агента (/partner), bcrypt.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS agent_password_hash TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_schedule_user ON user_schedule(user_id);
 CREATE INDEX IF NOT EXISTS idx_diary_user ON diary_entries(user_id);
 CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id);

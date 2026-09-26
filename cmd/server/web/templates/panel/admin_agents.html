@@ -1,0 +1,33 @@
+{{define "content"}}
+{{template "admin_header" "agents"}}
+<main>
+  <h1>Агенты</h1>
+  {{template "flash" .}}
+  <form method="POST" action="/admin/agents/grant" class="card row">
+    <input type="hidden" name="back" value="/admin/agents">
+    <div><label>Выдать агентский код</label><input type="text" name="who" placeholder="@username или tg_id"></div>
+    <button class="btn" type="submit">Выдать</button>
+  </form>
+  <div class="card table-wrap">
+    <table>
+      <tr><th>Агент</th><th>Код</th><th>Пришло</th><th>Оплатили</th><th>Баланс</th><th>Пароль кабинета</th><th></th></tr>
+      {{range .Content}}
+      <tr>
+        <td><a href="/admin/users/{{.ID}}">{{.Name}}</a>{{if .Username.Valid}} <span class="muted">@{{.Username.String}}</span>{{end}}</td>
+        <td><code>{{.Code}}</code></td>
+        <td>{{.Referred}}</td>
+        <td>{{.PayingReferrals}}</td>
+        <td>{{.Balance}} ₽</td>
+        <td>{{if .HasPassword}}задан{{else}}<span class="muted">нет</span>{{end}}</td>
+        <td><div class="actions">
+          {{if .HasPassword}}<form method="POST" action="/admin/agents/{{.ID}}/reset-password"><button class="btn sec" type="submit">Сбросить пароль</button></form>{{end}}
+          <form method="POST" action="/admin/agents/{{.ID}}/revoke" onsubmit="return confirm('Отозвать агентский код? Новые пользователи не смогут по нему прийти.')"><button class="btn danger" type="submit">Отозвать</button></form>
+        </div></td>
+      </tr>
+      {{else}}
+      <tr><td colspan="7" class="muted">Агентов пока нет</td></tr>
+      {{end}}
+    </table>
+  </div>
+</main>
+{{end}}

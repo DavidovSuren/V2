@@ -61,6 +61,17 @@ func testTemplates(t *testing.T) map[string]*template.Template {
 		}
 		out[filepath.Base(p)] = tm
 	}
+	panel, _ := fs.Glob(fsys, "web/templates/panel/*.html")
+	for _, p := range panel {
+		if filepath.Base(p) == "layout.html" {
+			continue
+		}
+		tm, err := template.New(filepath.Base(p)).Funcs(funcs).ParseFS(fsys, "web/templates/panel/layout.html", p)
+		if err != nil {
+			t.Fatalf("%s: %v", p, err)
+		}
+		out["panel/"+filepath.Base(p)] = tm
+	}
 	return out
 }
 

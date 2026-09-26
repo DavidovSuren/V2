@@ -25,14 +25,27 @@
         {{if eq .Gender.String "female"}}👩{{else if eq .Gender.String "male"}}🧑{{else}}👤{{end}}
         {{if .Diamond}}<span class="diamond-badge">💎</span>{{end}}
       </div>
-      <div style="flex:1">
-        <div class="list-name">{{.Name}}</div>
+      <div style="flex:1;min-width:0">
+        <div class="list-name">{{.Name}}{{if eq .ID $.MeID}} <span class="list-sub">(ты)</span>{{end}}</div>
+        {{if $.PremiumView}}
+        <div class="list-sub">{{if .Username.Valid}}@{{.Username.String}} · {{end}}🔥 {{.Streak}}{{range .BadgeIcons}} {{.}}{{end}}</div>
+        {{end}}
       </div>
-      {{if $.PremiumView}}<div class="list-level">Ур. {{.Level}}</div>{{end}}
+      {{if $.PremiumView}}<div class="list-level">Ур. {{.Level}}</div>
+        {{if and (ne $.Tab "friends") (ne .ID $.MeID) .Username.Valid}}
+        <form method="POST" action="/friends/add">
+          <input type="hidden" name="username" value="{{.Username.String}}">
+          <button class="btn-text" type="submit" title="Добавить в контакты">➕</button>
+        </form>
+        {{end}}
+      {{end}}
     </div>
     {{end}}
   {{else}}
     <div class="subtitle" style="margin:0">Пока никого нет</div>
+  {{end}}
+  {{if .HiddenCount}}
+  <div class="list-item" style="justify-content:center;color:var(--tg-hint-color)">🔒 Ещё {{.HiddenCount}} участников скрыто — доступно с Premium</div>
   {{end}}
 </div>
 

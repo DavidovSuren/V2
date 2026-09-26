@@ -1,0 +1,41 @@
+{{define "content"}}
+<header><div class="in">
+  <span class="brand">Version 2.0 · Кабинет агента</span>
+  <nav></nav>
+  <form method="POST" action="/partner/logout"><button class="btn link" type="submit">Выйти</button></form>
+</div></header>
+<main>
+  {{with .Content}}
+  <h1>{{.Name}}</h1>
+  <div class="grid">
+    <div class="card stat"><div class="v"><code>{{.Code}}</code></div><div class="l">агентский код — приглашённые вводят его при регистрации</div></div>
+    <div class="card stat"><div class="v">{{.Balance}} ₽</div><div class="l">баланс (50% с каждой оплаты)</div></div>
+    <div class="card stat"><div class="v">{{len .Referred}}</div><div class="l">пришло по коду</div></div>
+    <div class="card stat"><div class="v">{{.PayingReferrals}}</div><div class="l">оплатили подписку</div></div>
+  </div>
+  <div class="card table-wrap">
+    <h2>Приглашённые</h2>
+    <table>
+      <tr><th>Имя</th><th>Пришёл</th><th>Тариф</th><th>Оплатил</th><th>Вам начислено</th></tr>
+      {{range .Referred}}
+      <tr><td>{{.Name}}</td><td class="small">{{printf "%.10s" .JoinedAt}}</td><td>{{.SubscriptionTier}}</td><td>{{.Paid}} ₽</td><td>{{.Commission}} ₽</td></tr>
+      {{else}}
+      <tr><td colspan="5" class="muted">Пока никто не пришёл по вашему коду</td></tr>
+      {{end}}
+    </table>
+  </div>
+  <div class="card table-wrap">
+    <h2>Начисления</h2>
+    <table>
+      <tr><th>Дата</th><th>Сумма</th><th>Описание</th></tr>
+      {{range .History}}
+      <tr><td class="small">{{printf "%.10s" .CreatedAt}}</td><td>{{.Amount}} ₽</td><td>{{.Note.String}}</td></tr>
+      {{else}}
+      <tr><td colspan="3" class="muted">Начислений пока нет</td></tr>
+      {{end}}
+    </table>
+  </div>
+  <p class="muted small">Вывод средств скоро появится — сейчас баланс копится в приложении.</p>
+  {{end}}
+</main>
+{{end}}

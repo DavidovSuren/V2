@@ -1,0 +1,72 @@
+{{define "layout"}}<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>{{.Title}} · Version 2.0</title>
+  <style>
+    :root { --bg:#f6f7f9; --card:#fff; --text:#1c1f24; --hint:#6b7280; --line:#e5e7eb; --accent:#2f6fed; --ok:#15803d; --err:#b91c1c; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#121417; --card:#1b1e23; --text:#e8eaed; --hint:#9aa0a6; --line:#2c3037; --accent:#6b9bff; --ok:#4ade80; --err:#f87171; } }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    header { background:var(--card); border-bottom:1px solid var(--line); padding:0 16px; }
+    header .in { max-width:1100px; margin:0 auto; display:flex; align-items:center; gap:18px; min-height:52px; flex-wrap:wrap; }
+    header .brand { font-weight:700; }
+    header nav { display:flex; gap:14px; flex-wrap:wrap; flex:1; }
+    header nav a { color:var(--hint); text-decoration:none; }
+    header nav a.active, header nav a:hover { color:var(--text); }
+    main { max-width:1100px; margin:0 auto; padding:20px 16px 48px; }
+    h1 { font-size:22px; margin:0 0 16px; }
+    h2 { font-size:16px; margin:0 0 10px; }
+    a { color:var(--accent); }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); gap:12px; }
+    .stat .v { font-size:24px; font-weight:700; } .stat .l { color:var(--hint); font-size:12px; }
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+    th { color:var(--hint); font-weight:600; font-size:12px; white-space:nowrap; }
+    input[type=text], input[type=password], input[type=date], select, textarea { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--text); font:inherit; }
+    textarea { min-height:70px; resize:vertical; }
+    label { display:block; font-weight:600; margin:10px 0 4px; }
+    .btn { display:inline-block; padding:8px 14px; border-radius:8px; border:1px solid var(--accent); background:var(--accent); color:#fff; font:inherit; cursor:pointer; text-decoration:none; white-space:nowrap; }
+    .btn.sec { background:transparent; color:var(--accent); }
+    .btn.danger { background:transparent; border-color:var(--err); color:var(--err); }
+    .btn.link { background:none; border:none; color:var(--hint); padding:0; }
+    .row { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; }
+    .row > * { flex:1; min-width:140px; }
+    .row > .btn, .row > form { flex:0 0 auto; min-width:0; }
+    .actions { display:flex; gap:6px; flex-wrap:wrap; }
+    .flash { padding:10px 12px; border-radius:8px; margin-bottom:16px; border:1px solid; }
+    .flash.ok { color:var(--ok); border-color:var(--ok); } .flash.err { color:var(--err); border-color:var(--err); }
+    .muted { color:var(--hint); } .small { font-size:12px; }
+    .tag { display:inline-block; padding:1px 8px; border-radius:10px; background:var(--bg); border:1px solid var(--line); font-size:12px; white-space:nowrap; }
+    .login { max-width:360px; margin:60px auto; }
+    code { font-size:13px; }
+  </style>
+</head>
+<body>
+{{template "content" .}}
+</body>
+</html>
+{{end}}
+
+{{define "admin_header"}}
+<header><div class="in">
+  <span class="brand">Version 2.0 · Админка</span>
+  <nav>
+    <a href="/admin"{{if eq . "dash"}} class="active"{{end}}>Обзор</a>
+    <a href="/admin/questions"{{if eq . "questions"}} class="active"{{end}}>Вопросы</a>
+    <a href="/admin/tasks"{{if eq . "tasks"}} class="active"{{end}}>Задания и советы</a>
+    <a href="/admin/users"{{if eq . "users"}} class="active"{{end}}>Пользователи</a>
+    <a href="/admin/agents"{{if eq . "agents"}} class="active"{{end}}>Агенты</a>
+  </nav>
+  <form method="POST" action="/admin/logout"><button class="btn link" type="submit">Выйти</button></form>
+</div></header>
+{{end}}
+
+{{define "flash"}}
+{{if .Flash}}<div class="flash ok">{{.Flash}}</div>{{end}}
+{{if .Error}}<div class="flash err">{{.Error}}</div>{{end}}
+{{end}}

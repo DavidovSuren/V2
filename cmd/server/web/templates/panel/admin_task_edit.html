@@ -1,0 +1,22 @@
+{{define "content"}}
+{{template "admin_header" "tasks"}}
+<main>
+  {{with .Content}}
+  <p><a href="/admin/tasks?bank={{.Bank}}&cat={{.Task.Category}}">← к списку</a></p>
+  <h1>Задание <code>{{.Task.ID}}</code></h1>
+  {{end}}
+  {{template "flash" .}}
+  {{with .Content}}
+  <div class="card">
+    <p><span class="tag">{{if eq .Bank "male"}}мужской банк{{else}}женский банк{{end}}</span> <span class="tag">{{.Task.Category}}</span></p>
+    <form method="POST" action="/admin/tasks/{{.Bank}}/{{.Task.ID}}">
+      <label>Текст задания</label>
+      <textarea name="text" rows="3" required>{{.Task.Text}}</textarea>
+      <label>Почему это важно (совет)</label>
+      <textarea name="why" rows="5" required>{{.Task.Why}}</textarea>
+      <p><button class="btn" type="submit">Сохранить</button></p>
+    </form>
+  </div>
+  {{end}}
+</main>
+{{end}}

@@ -1,0 +1,33 @@
+{{define "content"}}
+{{template "admin_header" "users"}}
+<main>
+  <h1>Пользователи</h1>
+  {{template "flash" .}}
+  {{with .Content}}
+  <form method="GET" action="/admin/users" class="card row">
+    <div><label>Поиск</label><input type="text" name="q" value="{{.Query}}" placeholder="имя, @username, tg_id или код"></div>
+    <button class="btn" type="submit">Найти</button>
+  </form>
+  <div class="card table-wrap">
+    <table>
+      <tr><th>id</th><th>Имя</th><th>@username</th><th>tg_id</th><th>Ур.</th><th>Стрик</th><th>Тариф</th><th>до</th><th>Агент</th></tr>
+      {{range .Users}}
+      <tr>
+        <td><a href="/admin/users/{{.ID}}">{{.ID}}</a></td>
+        <td><a href="/admin/users/{{.ID}}">{{.Name}}</a></td>
+        <td>{{if .Username.Valid}}@{{.Username.String}}{{end}}</td>
+        <td><code>{{.TgID}}</code></td>
+        <td>{{.Level}}</td>
+        <td>{{.StreakCurrent}}</td>
+        <td>{{.SubscriptionTier}}</td>
+        <td class="small">{{if .SubscriptionExpiresAt.Valid}}{{printf "%.10s" .SubscriptionExpiresAt.String}}{{end}}</td>
+        <td>{{if .PremiumAgentCode.Valid}}<code>{{.PremiumAgentCode.String}}</code>{{end}}</td>
+      </tr>
+      {{else}}
+      <tr><td colspan="9" class="muted">Никого не найдено</td></tr>
+      {{end}}
+    </table>
+  </div>
+  {{end}}
+</main>
+{{end}}
