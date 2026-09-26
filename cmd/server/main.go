@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"version20/internal/handlers"
 	"version20/internal/models"
 	"version20/internal/store"
+	"version20/internal/telegram"
 )
 
 //go:embed web/templates/layout.html web/templates/partials/*.html web/templates/pages/*.html web/templates/panel/*.html
@@ -43,6 +45,16 @@ func main() {
 	devFakeAuth := os.Getenv("DEV_ALLOW_FAKE_AUTH") == "true"
 	adminLogin := os.Getenv("ADMIN_LOGIN")
 	adminPassword := os.Getenv("ADMIN_PASSWORD")
+	publicURL := strings.TrimRight(os.Getenv("PUBLIC_URL"), "/")
+	payments := handlers.PaymentConfig{
+		ProviderToken: os.Getenv("PAYMENT_PROVIDER_TOKEN"),
+		Currency:      strings.ToUpper(getenv("PAYMENT_CURRENCY", "RUB")),
+		StarsPrices: map[string]int{
+			"plus369":    atoiEnv("STARS_PRICE_PLUS"),
+			"premium888": atoiEnv("STARS_PRICE_PREMIUM"),
+		},
+		TestMode: os.Getenv("PAYMENTS_TEST_MODE") == "true",
+	}
 
 	if sessionSecret == "dev-insecure-secret-change-me" {
 		log.Println("[server] SESSION_SECRET не задан — используется небезопасный дефолт (только для разработки).")
@@ -53,8 +65,10 @@ func main() {
 	if adminLogin == "" || adminPassword == "" {
 		log.Println("[server] ADMIN_LOGIN/ADMIN_PASSWORD не заданы — веб-админка /admin выключена.")
 	}
-	if adminTgID == "" {
-		log.Println("[server] ADMIN_TG_ID не задан — выдача премиум-агентских кодов недоступна.")
+	if payments.TestMode {
+		log.Println("[server] PAYMENTS_TEST_MODE=true — подписка активируется без оплаты. Только для локальной разработки.")
+	} else if payments.ProviderToken == "" && payments.Currency != "XTR" {
+		log.Println("[server] PAYMENT_PROVIDER_TOKEN не задан — оплата подписки недоступна.")
 	}
 
 	conn, err := db.Open(databaseURL)
@@ -104,12 +118,38 @@ func main() {
 		AdminPassword:   adminPassword,
 		AdminSessions:   adminSessions,
 		PartnerSessions: partnerSessions,
+
+		Payments:         payments,
+		PublicURL:        publicURL,
+		MiniAppShortName: os.Getenv("MINIAPP_SHORT_NAME"),
+	}
+
+	if botToken != "" {
+		bot := telegram.NewBot(botToken)
+		app.Bot = bot
+		if name, err := bot.GetMe(); err != nil {
+			log.Println("[bot] getMe:", err)
+		} else {
+			app.BotUsername = name
+		}
+		if publicURL != "" {
+			if err := bot.SetWebhook(publicURL+"/telegram/webhook", handlers.WebhookSecret(botToken)); err != nil {
+				log.Println("[bot] setWebhook:", err)
+			} else {
+				log.Println("[bot] вебхук: " + publicURL + "/telegram/webhook")
+			}
+		}
 	}
 
 	cron.Start(st, botToken)
 
 	log.Println("Version 2.0 (Go) слушает порт " + port)
 	log.Fatal(http.ListenAndServe("0.0.0.0:"+port, app.Routes()))
+}
+
+func atoiEnv(key string) int {
+	n, _ := strconv.Atoi(os.Getenv(key))
+	return n
 }
 
 func getenv(key, fallback string) string {

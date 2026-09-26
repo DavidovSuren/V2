@@ -98,6 +98,10 @@ func newTestApp(t *testing.T) *App {
 		TasksFemale: testBank(t, "female"),
 		BotToken:    testBotToken,
 		AdminTgID:   testAdminID,
+		// Старые сценарии оформляют подписку сразу, без Telegram.
+		Payments: PaymentConfig{TestMode: true},
+		// Сообщения бота в тестах никуда не уходят.
+		Notify: func(string, string) {},
 	}
 }
 
@@ -166,6 +170,17 @@ func (a *App) do(t *testing.T, method, target string, body io.Reader, contentTyp
 		Body:     rec.Body.String(),
 		Cookies:  rec.Result().Cookies(),
 	}
+}
+
+func (a *App) doWithHeader(t *testing.T, method, target, body string, headers map[string]string) resp {
+	t.Helper()
+	req := httptest.NewRequest(method, target, strings.NewReader(body))
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+	rec := httptest.NewRecorder()
+	a.Routes().ServeHTTP(rec, req)
+	return resp{Code: rec.Code, Location: rec.Header().Get("Location"), Body: rec.Body.String(), Cookies: rec.Result().Cookies()}
 }
 
 func (a *App) session(tgID string) *http.Cookie {

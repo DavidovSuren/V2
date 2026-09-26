@@ -19,6 +19,10 @@ type WelcomeData struct {
 // приветственная форма; зарегистрирован, но без анкеты → на анкету;
 // иначе — главный экран.
 func (a *App) handleIndex(w http.ResponseWriter, r *http.Request) {
+	// ?ref=КОД — кнопка бота после /start КОД (ссылка t.me/<бот>?start=КОД).
+	if ref := r.URL.Query().Get("ref"); ref != "" && isSafeCode(ref) {
+		http.SetCookie(w, &http.Cookie{Name: refCookieName, Value: ref, Path: "/", MaxAge: 3600, SameSite: http.SameSiteLaxMode})
+	}
 	tgID, ok := a.Sessions.TgIDFromRequest(r)
 	if !ok {
 		// Сессии ещё нет — только тут bootstrap.js должен слать initData.
@@ -44,6 +48,9 @@ func (a *App) handleIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func refCodeFromCookie(r *http.Request) string {
+	if ref := r.URL.Query().Get("ref"); ref != "" && isSafeCode(ref) {
+		return ref
+	}
 	c, err := r.Cookie(refCookieName)
 	if err != nil {
 		return ""

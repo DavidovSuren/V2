@@ -40,6 +40,13 @@ type App struct {
 	Now func() time.Time
 	// Notify — отправка сообщения от бота; nil — Bot API (если задан BOT_TOKEN).
 	Notify func(tgID, text string)
+
+	// Оплата через Telegram (этап 2).
+	Bot              BotAPI // nil — Bot API недоступен (нет BOT_TOKEN)
+	BotUsername      string // @username бота без @, из getMe при старте
+	Payments         PaymentConfig
+	PublicURL        string // PUBLIC_URL — https-адрес приложения
+	MiniAppShortName string // MINIAPP_SHORT_NAME — короткое имя Mini App в @BotFather
 }
 
 func (a *App) Questions() []models.Question {
@@ -111,6 +118,7 @@ func (a *App) Routes() http.Handler {
 	})
 
 	mux.HandleFunc("POST /auth/bootstrap", a.handleAuthBootstrap)
+	mux.HandleFunc("POST /telegram/webhook", a.handleTelegramWebhook)
 
 	mux.HandleFunc("GET /", a.handleIndex)
 	mux.HandleFunc("POST /onboarding", a.handleOnboardingSubmit)
@@ -134,6 +142,7 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("POST /friends/add", a.requireOnboarded(a.handleFriendAdd))
 
 	mux.HandleFunc("GET /profile", a.requireOnboarded(a.handleProfile))
+	mux.HandleFunc("GET /plans", a.requireOnboarded(a.handlePlans))
 	mux.HandleFunc("POST /subscribe", a.requireOnboarded(a.handleSubscribe))
 	mux.HandleFunc("POST /promo", a.requireOnboarded(a.handlePromoRedeem))
 	mux.HandleFunc("POST /logout", a.requireOnboarded(a.handleLogout))

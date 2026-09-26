@@ -73,21 +73,6 @@ func (a *App) handleProfile(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *App) handleSubscribe(w http.ResponseWriter, r *http.Request) {
-	user := userFromCtx(r)
-	r.ParseForm()
-	tier := r.FormValue("tier")
-	if _, ok := referrals.Prices[tier]; !ok {
-		http.Redirect(w, r, "/profile", http.StatusSeeOther)
-		return
-	}
-	if err := a.activateSubscription(user.ID, tier, ""); err != nil {
-		a.serverError(w, err)
-		return
-	}
-	http.Redirect(w, r, "/profile", http.StatusSeeOther)
-}
-
 var errUnknownTier = errors.New("неизвестный тариф")
 
 // activateSubscription — единственное место, где оплата превращается в

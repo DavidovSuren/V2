@@ -343,7 +343,7 @@ func TestPartnerPremiumReferrerBoost(t *testing.T) {
 		tg := itoa(200 + i)
 		a.newPlayer(t, tg, code)
 		mustNotContain(t, a.get(t, tg, "/profile").Body, "old-price", "-20%")
-		if r := a.post(t, tg, "/subscribe", url.Values{"tier": {"plus369"}}); r.Location != "/profile" {
+		if r := a.post(t, tg, "/subscribe", url.Values{"tier": {"plus369"}}); r.Location != "/plans?paid=1" {
 			t.Fatalf("subscribe: %q", r.Location)
 		}
 		wantPct, wantAmount := 20, 74

@@ -136,6 +136,11 @@ Bot API (`setChatMenuButton`) укажи этот адрес как Web App дл
 | `ADMIN_TG_ID` | твой Telegram user id (узнать у @userinfobot) |
 | `DEV_ALLOW_FAKE_AUTH` | `false` — в проде debug-режим должен быть выключен |
 | `PORT` | `3000` (совпадает с `containerPort` в `amvera.yaml`) |
+| `PAYMENT_PROVIDER_TOKEN` | токен ЮKassa из @BotFather → Payments (как секрет) |
+| `PAYMENT_CURRENCY` | `RUB` или `XTR` (Telegram Stars; тогда нужны `STARS_PRICE_PLUS`, `STARS_PRICE_PREMIUM`) |
+| `PUBLIC_URL` | https-адрес приложения — при старте на него ставится вебхук бота `/telegram/webhook` |
+| `MINIAPP_SHORT_NAME` | короткое имя Mini App из @BotFather (`/newapp`) — для реферальных ссылок |
+| `PAYMENTS_TEST_MODE` | `false` — в проде подписка активируется только после оплаты |
 
 После деплоя отдельно проверь в панели Amvera поле порта приложения
 (в разделе Networking/домена) — оно должно быть `3000`, а путь health-check
