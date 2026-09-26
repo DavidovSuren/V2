@@ -1,7 +1,10 @@
 {{define "content"}}
-<div class="flex justify-between items-center mb-8">
-  <h1 style="font-size:18px;margin:0">МОЯ VERSION 2.0</h1>
-  <a href="/profile" class="avatar-icon" style="font-size:24px;text-decoration:none">👤{{if .Diamond}}<span class="diamond-badge" title="Уровень 100">💎</span>{{end}}</a>
+<div class="home-head">
+  <div>
+    <div class="subtitle" style="margin:0">{{.DateLabel}}</div>
+    <div class="home-title">{{.Name}}, день {{.DayNumber}}{{if .Diamond}} <span class="diamond-badge" title="Уровень 100">{{template "icon" "diamond"}}</span>{{end}}</div>
+  </div>
+  <a class="pill pill-flame pill-lg" href="/progress" aria-label="Стрик">{{template "icon" "flame"}}{{.StreakCurrent}} дн.</a>
 </div>
 
 {{if .TrialDaysLeft}}
@@ -9,78 +12,76 @@
 {{end}}
 
 {{if .FocusAreas}}
-<div class="card text-center">
-  <div style="font-weight:600;margin-bottom:6px">🎯 Твой план готов</div>
-  <div class="subtitle" style="margin-bottom:0">По ответам мы сделали упор на: {{range $i, $a := .FocusAreas}}{{if $i}}, {{end}}{{$a}}{{end}}</div>
+<div class="card">
+  <div class="section-label" style="margin:0 0 6px">Твой план готов</div>
+  <div class="subtitle" style="margin:0">По ответам сделали упор на: {{range $i, $a := .FocusAreas}}{{if $i}}, {{end}}{{$a}}{{end}}</div>
 </div>
 {{end}}
 
-<div class="card text-center">
-  <div class="circle-progress">
-    <svg width="120" height="120">
-      <circle class="circle-bg" cx="60" cy="60" r="52"></circle>
-      <circle class="circle-fill" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="{{.CircleOffset}}"></circle>
-    </svg>
-    <div class="circle-text">{{printf "%.0f" .ProgressPct}}%</div>
-  </div>
-  <div style="font-size:15px;font-weight:600">Общий прогресс</div>
-  <div class="subtitle" style="margin:4px 0 0">{{.DayLabel}}</div>
-</div>
-
-<div class="card">
-  <h2 style="margin-bottom:8px">Сегодняшнее действие</h2>
+<div class="card task-card">
   {{if .Finished}}
-    <div class="text-center">
-      💎 <strong>Все 365 заданий пройдены!</strong><br>
-      <small style="color:var(--tg-hint-color)">Ты собрал(а) свою Version 2.0</small>
+    <div class="task-done">
+      <div class="done-circle">{{template "icon" "diamond"}}</div>
+      <div class="task-text">Все 365 заданий пройдены</div>
+      <div class="subtitle" style="margin:0">Твоя Version 2.0 собрана. Алмаз — твой.</div>
     </div>
   {{else if not .CanActToday}}
-    <div class="text-center" style="color:var(--tg-hint-color)">
-      ✅ Выполнено сегодня<br>
-      <small>Завтра появится новое задание</small>
+    <div class="task-done">
+      <div class="done-circle">{{template "icon" "check"}}</div>
+      <div class="task-text">{{if .DoneToday}}День {{.DayNumber}} закрыт{{else}}Задание перенесено на завтра{{end}}</div>
+      <div class="subtitle" style="margin:0">Завтра появится новое задание. Возвращайся.</div>
     </div>
   {{else}}
-    <div style="font-size:12px;color:var(--tg-hint-color);margin-bottom:4px">{{.Category}}</div>
-    <p style="margin-bottom:16px;font-size:15px">{{.TaskText}}</p>
-    <a class="btn btn-primary mb-8" href="/diary">ВЫПОЛНИЛ(А)</a>
-    <a class="btn btn-secondary mb-8" href="/today/skip">ПРОПУСТИТЬ</a>
-    <button class="btn btn-text" type="button" data-open-dialog="modal-why">Почему я это делаю?</button>
+    <div class="flex justify-between items-center">
+      <span class="pill pill-chip">{{.Category}}</span>
+      <button class="icon-btn" type="button" data-open-dialog="modal-why" aria-label="Почему я это делаю">{{template "icon" "help"}}</button>
+    </div>
+    <div class="task-text">{{.TaskText}}</div>
+    <div class="task-actions">
+      <a class="btn btn-primary" href="/diary">{{template "icon" "check"}}Сделал</a>
+      <a class="btn btn-text" href="/today/skip">Перенести на завтра</a>
+    </div>
 
     <dialog id="modal-why">
-      <div class="modal-title">Почему я это делаю?</div>
-      <p style="margin-bottom:20px;line-height:1.5">{{.TaskWhy}}</p>
+      <div class="modal-title">Почему я это делаю</div>
+      <p class="subtitle" style="color:var(--text-soft);line-height:1.55">{{.TaskWhy}}</p>
       <button class="btn btn-primary" type="button" data-close-dialog>Понятно</button>
     </dialog>
   {{end}}
 </div>
 
+<div class="week">
+  {{range .Week}}
+  <div class="week-day{{if .Today}} week-today{{end}}">{{.Label}}<div class="week-bar week-{{.State}}"></div></div>
+  {{end}}
+</div>
+
 {{if .Quote}}
 <div class="card quote-card">
-  <div class="section-label" style="margin:0 0 8px">Цитата дня</div>
+  <div class="section-label" style="margin:0 0 10px">Цитата дня</div>
   <div class="quote-text">«{{.Quote}}»</div>
 </div>
 {{end}}
 
-<div class="card text-center">
-  <div style="font-size:13px;color:var(--tg-hint-color);margin-bottom:8px">Ты через 365 дней</div>
-  <div style="height:140px;background:var(--tg-secondary-bg-color);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--tg-hint-color)">
-    [AI-карточка — заглушка]
-  </div>
+<div class="stat-row">
+  <div class="card"><div class="stat-label">Уровень</div><div class="stat-value">{{.Level}}</div></div>
+  <div class="card"><div class="stat-label">Опыт</div><div class="stat-value">{{digits .XP}}</div></div>
+  <div class="card"><div class="stat-label">Пройдено</div><div class="stat-value">{{printf "%.0f" .ProgressPct}}%</div></div>
 </div>
 
 {{if .CelebrateLevel100}}
 <dialog id="modal-celebrate" data-autoshow="1">
-  <div class="icon-big">💎</div>
-  <div class="modal-title text-center">УРОВЕНЬ 100!</div>
-  <p style="margin-bottom:20px;text-align:center;color:var(--tg-hint-color)">Ты полностью собрал(а) свою Version 2.0 за 365 дней! В подарок — 6 месяцев Premium-подписки. Твой алмаз теперь виден всем в «Сообществе».</p>
-  <button class="btn btn-primary" type="button" data-close-dialog>Отлично!</button>
+  <div class="medal-big tone-gold">{{template "icon" "diamond"}}</div>
+  <div class="modal-title text-center">Уровень 100</div>
+  <p class="subtitle text-center">Ты полностью собрал(а) свою Version 2.0 за 365 дней. В подарок — 6 месяцев Premium. Твой алмаз теперь виден в «Друзьях».</p>
+  <button class="btn btn-primary" type="button" data-close-dialog>Отлично</button>
 </dialog>
 {{else if .Celebrate}}
 <dialog id="modal-celebrate" data-autoshow="1">
   <div class="medal-big tone-{{.Celebrate.Tone}}">{{template "icon" .Celebrate.Icon}}</div>
   <div class="modal-title text-center">{{.Celebrate.Name}}</div>
-  <p style="margin-bottom:20px;text-align:center;color:var(--tg-hint-color)">{{.Celebrate.Desc}}</p>
-  <button class="btn btn-primary" type="button" data-close-dialog>Отлично!</button>
+  <p class="subtitle text-center">{{.Celebrate.Desc}}</p>
+  <button class="btn btn-primary" type="button" data-close-dialog>Отлично</button>
 </dialog>
 {{end}}
 

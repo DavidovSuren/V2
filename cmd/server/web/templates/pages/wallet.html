@@ -1,65 +1,79 @@
 {{define "content"}}
 <div class="page-head">
-  <a href="/profile" class="back" aria-label="Назад">←</a>
+  <a href="/profile" class="back" aria-label="Назад">{{template "icon" "arrow-left"}}</a>
   <h1>Кошелёк</h1>
 </div>
 
-{{if .Message}}<div class="toast mb-8">{{.Message}}</div>{{end}}
+{{if .Message}}<div class="toast">{{.Message}}</div>{{end}}
 
-<div class="card wallet-balance">
+<div class="card wallet-card">
   <div class="flex justify-between items-center">
-    <span class="subtitle" style="margin:0">Доступно к выводу</span>
+    <span class="stat-label" style="font-size:13px">Доступно к выводу</span>
     {{if .NoSubscription}}<a class="pill pill-muted" href="/plans">Нет подписки — доход не начисляется</a>{{else}}<span class="pill pill-gold">{{.RateLabel}}</span>{{end}}
   </div>
   <div class="wallet-amount">{{rub .Summary.Balance}}</div>
-  <div class="subtitle">Всего заработано {{rub .Summary.Earned}} · выведено {{rub .Summary.Withdrawn}}</div>
-  {{if .RateHint}}<div class="subtitle">{{.RateHint}}</div>{{end}}
+  <div class="list-sub" style="font-size:13px">Всего заработано {{rub .Summary.Earned}} · выведено {{rub .Summary.Withdrawn}}{{if .RateHint}}<br>{{.RateHint}}{{end}}</div>
   {{if .PayoutToday}}
   <a class="btn btn-primary" href="/wallet/withdraw">Вывести</a>
   {{else}}
-  <span class="btn btn-secondary btn-disabled" aria-disabled="true">Вывод {{.NextPayout}}</span>
+  <span class="btn btn-primary btn-disabled" aria-disabled="true">Вывод {{.NextPayout}}</span>
   {{end}}
 </div>
 
 <div class="stat-row">
-  <div class="card stat"><div class="subtitle" style="margin:0">Пришли по ссылке</div><div class="stat-value">{{.InvitedCount}}</div></div>
-  <div class="card stat"><div class="subtitle" style="margin:0">Оплатили</div><div class="stat-value">{{.PaidCount}}</div></div>
+  <div class="card"><div class="stat-label">Пришли по ссылке</div><div class="stat-value">{{.InvitedCount}}</div></div>
+  <div class="card"><div class="stat-label">Оплатили</div><div class="stat-value">{{.PaidCount}}</div></div>
 </div>
 
-<div class="card">
-  <div class="subtitle" style="margin-bottom:8px">Твоя ссылка</div>
+<div class="card" style="padding:14px">
+  <div class="list-sub" style="font-size:13px;margin-bottom:10px">Твоя ссылка</div>
   <div class="share-row">
     <div class="share-link">{{.Link}}</div>
-    {{if .ShareURL}}<a class="share-btn" href="{{.ShareURL}}" data-tg-link aria-label="Поделиться ссылкой">↗</a>{{end}}
+    {{if .ShareURL}}<a class="share-btn" href="{{.ShareURL}}" data-tg-link aria-label="Поделиться ссылкой">{{template "icon" "share"}}</a>{{end}}
   </div>
 </div>
 
-<h2 class="section-label">Приглашённые</h2>
-<div class="card">
+<div class="section-label">Приглашённые</div>
+<div class="card" style="padding:4px 16px">
   {{range .People}}
   <div class="list-item">
-    <div class="list-avatar">{{.Initial}}</div>
-    <div style="flex:1">
-      <div class="list-name">{{.Name}}</div>
-      <div class="subtitle" style="margin:0">{{.Status}}</div>
+    <div class="avatar" style="width:36px;height:36px;font-size:14px">{{.Initial}}</div>
+    <div style="flex:1;min-width:0">
+      <div class="list-name" style="font-size:14px">{{.Name}}</div>
+      <div class="list-sub">{{.Status}}</div>
     </div>
-    {{if gt .Earned 0}}<strong class="money-plus">+{{rub .Earned}}</strong>{{else}}<span class="subtitle" style="margin:0">{{.Right}}</span>{{end}}
+    {{if gt .Earned 0}}<span class="money-plus">+{{rub .Earned}}</span>{{else}}<span class="list-sub" style="font-size:13px">{{.Right}}</span>{{end}}
   </div>
   {{else}}
-  <div class="subtitle" style="margin:0">Пока никого — поделись ссылкой</div>
+  <div class="list-item"><span class="list-sub">Пока никого — поделись ссылкой</span></div>
   {{end}}
 </div>
 
-<h2 class="section-label">История</h2>
-<div class="card">
+<div class="section-label">История</div>
+<div class="card" style="padding:4px 16px">
   {{range .History}}
-  <div class="flex justify-between mb-8">
-    <span class="subtitle" style="margin:0">{{.Date}} · {{.Note}}{{if .Status}} · {{.Status}}{{end}}</span>
-    <strong class="{{if gt .Amount 0}}money-plus{{end}}">{{if gt .Amount 0}}+{{end}}{{rub .Amount}}</strong>
+  <div class="list-item">
+    <div style="flex:1;min-width:0">
+      <div style="font-size:14px">{{.Note}}</div>
+      <div class="list-sub">{{.Date}}{{if .Status}} · {{.Status}}{{end}}</div>
+    </div>
+    <span class="{{if gt .Amount 0}}money-plus{{else}}list-sub{{end}}" style="font-size:15px">{{if gt .Amount 0}}+{{end}}{{rub .Amount}}</span>
   </div>
   {{else}}
-  <div class="subtitle" style="margin:0">Пока пусто</div>
+  <div class="list-item"><span class="list-sub">Пока пусто</span></div>
   {{end}}
 </div>
-<p class="text-center"><a href="/terms">Условия партнёрской программы</a></p>
+
+<div class="card" id="partner">
+  <div class="list-name" style="margin-bottom:4px">Кабинет партнёра в браузере</div>
+  <div class="list-sub" style="margin-bottom:12px">{{if .HasPartnerPassword}}Пароль задан. Вход: адрес приложения + /partner, код <b>{{.ReferralCode}}</b> и пароль.{{else}}Задай пароль, чтобы смотреть доход с компьютера: адрес приложения + /partner, код <b>{{.ReferralCode}}</b> и пароль.{{end}}</div>
+  {{if .PartnerPasswordMsg}}<div class="toast">{{.PartnerPasswordMsg}}</div>{{end}}
+  <form method="POST" action="/partner/password">
+    <div class="input-group" style="margin-bottom:8px"><input type="password" name="password" placeholder="Пароль (от 8 символов)" autocomplete="new-password" required></div>
+    <div class="input-group" style="margin-bottom:8px"><input type="password" name="password2" placeholder="Повтори пароль" autocomplete="new-password" required></div>
+    <button class="btn btn-secondary" type="submit">{{if .HasPartnerPassword}}Сменить пароль{{else}}Задать пароль{{end}}</button>
+  </form>
+</div>
+
+<p class="text-center"><a href="/terms" style="font-size:13px;text-decoration:none">Условия партнёрской программы</a></p>
 {{end}}

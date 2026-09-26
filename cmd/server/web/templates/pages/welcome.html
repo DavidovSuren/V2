@@ -3,7 +3,7 @@
 <div class="welcome">
   <div class="welcome-logo">2.0</div>
   <h1 class="welcome-title">Новая версия себя за 365 дней</h1>
-  <p class="subtitle">Одно действие в день. План под тебя по 8 направлениям жизни.</p>
+  <p class="welcome-lead">Одно действие в день. План под тебя по 8 направлениям жизни.</p>
 
   {{if .Error}}<div class="toast">{{.Error}}</div>{{end}}
 
@@ -24,12 +24,13 @@
     </div>
 
     <input type="hidden" name="refCode" value="{{.RefCode}}">
+    <div class="spacer"></div>
 
     <label class="terms-check">
       <input type="checkbox" name="terms" value="1" required data-terms-check>
       <span>Я принимаю <a href="/terms">пользовательское соглашение</a> и даю согласие на обработку персональных данных</span>
     </label>
-    <div class="trial-note">3 дня бесплатно. Без привязки карты.</div>
+    <div class="trial-note">{{template "icon" "shield"}}<span>3 дня бесплатно. Без привязки карты.</span></div>
     <button class="btn btn-primary" type="submit" data-terms-submit>Начать — 21 вопрос, 3 минуты</button>
   </form>
 </div>

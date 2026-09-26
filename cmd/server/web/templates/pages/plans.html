@@ -11,19 +11,19 @@
   <p class="subtitle">Можно продлить заранее или перейти на другой тариф.</p>
   {{end}}
 
-  {{if .Message}}<div class="toast mb-8">{{.Message}}</div>{{end}}
+  {{if .Message}}<div class="toast">{{.Message}}</div>{{end}}
 
   {{range .Tiers}}
   <div class="plan-card{{if eq .Tier "premium888"}} plan-card-premium{{end}}">
     {{if eq .Tier "premium888"}}<span class="plan-badge">Выбор большинства</span>{{end}}
     <div class="plan-head">
       <div class="plan-name">{{.Name}}</div>
-      <div><span class="plan-price">{{.Price}} ₽</span><span class="subtitle"> / мес</span></div>
+      <div><span class="plan-price">{{.Price}} ₽</span><span class="list-sub" style="font-size:13px"> / мес</span></div>
     </div>
     <ul class="plan-features">
-      <li>Все задания, отчёты и дневник</li>
-      {{if eq .Tier "premium888"}}<li>Уровни и награды всех участников и твоих контактов</li>{{end}}
-      <li><b>{{.Rate.Base}}%</b> с каждой подписки друга, <b>{{.Rate.Boosted}}%</b> — после {{$.BoostThreshold}} оплативших</li>
+      <li>{{template "icon" "check"}}Все задания, отчёты и дневник</li>
+      {{if eq .Tier "premium888"}}<li>{{template "icon" "check"}}Уровни и награды всех участников и твоих контактов</li>{{end}}
+      <li>{{template "icon" "check"}}<span><b>{{.Rate.Base}}%</b> с {{if eq .Tier "premium888"}}каждой {{end}}подписки друга, <b>{{.Rate.Boosted}}%</b> — после {{$.BoostThreshold}} оплативших</span></li>
     </ul>
     <form method="POST" action="/subscribe">
       <input type="hidden" name="tier" value="{{.Tier}}">
@@ -32,8 +32,8 @@
   </div>
   {{end}}
 
-  <p class="plans-note">Оплата через Telegram · Отмена в любой момент</p>
-  <p class="text-center"><a href="/terms">Условия партнёрской программы</a></p>
+  <div class="plans-note">{{template "icon" "lock"}}<span>Оплата через Telegram · Отмена в любой момент</span></div>
+  <p class="text-center" style="margin-top:10px"><a href="/terms" style="font-size:13px;text-decoration:none">Условия партнёрской программы</a></p>
 </div>
 
 {{template "nav" "profile"}}

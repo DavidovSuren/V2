@@ -266,7 +266,7 @@ func TestPartnerCabinet(t *testing.T) {
 	mustContain(t, formPost(t, a, "/partner/login", login).Body, "Неверный код или пароль")
 
 	// Пароль задаётся в профиле Mini App — у любого пользователя.
-	mustContain(t, a.get(t, "1", "/profile").Body, `action="/partner/password"`)
+	mustContain(t, a.get(t, "1", "/wallet").Body, `action="/partner/password"`)
 	if r := a.post(t, "1", "/partner/password", url.Values{"password": {"short"}, "password2": {"short"}}); !strings.Contains(r.Location, "partner_pw=short") {
 		t.Errorf("короткий пароль: %q", r.Location)
 	}

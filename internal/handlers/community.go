@@ -2,93 +2,102 @@ package handlers
 
 import (
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
-	"version20/internal/achievements"
 	"version20/internal/store"
 	"version20/internal/subscription"
 )
 
 type CommunityData struct {
-	Tab          string
+	Tab          string // "" — рейтинг недели, "friends" — мои контакты
 	PremiumView  bool
 	Upsell       string
-	People       []store.PersonRow
+	People       []FriendRow
 	AddFriendErr string
-	MeID         int64
-	HiddenCount  int // сколько участников скрыто от не-Premium
 	ShareURL     string
 }
 
-// handleCommunity — раздел "Сообщество". Виден всем, но уровень/бейджи/
-// алмаз видны только с активной подпиской 888 ₽. Порт backend/routes/community.js.
+// FriendRow — строка «Друзей» (макет 05).
+type FriendRow struct {
+	Rank     int
+	ID       int64
+	Name     string
+	Initial  string
+	Username string
+	Level    int
+	WeekDone int
+	Diamond  bool
+	Me       bool
+	CanAdd   bool // Premium: добавить в контакты по @username
+}
+
+// ratingLimit — сколько участников показывать в рейтинге недели (плюс ты,
+// если не попал в верх).
+const ratingLimit = 50
+
+// handleCommunity — «Друзья»: рейтинг недели и мои контакты. Имена и
+// «N из 7 на этой неделе» видны всем, уровни, алмазы и контакты — только
+// с активным Premium.
 func (a *App) handleCommunity(w http.ResponseWriter, r *http.Request) {
 	user := userFromCtx(r)
 	tab := r.URL.Query().Get("tab")
+	if tab != "friends" {
+		tab = ""
+	}
 	premium := subscription.IsPremiumActive(user.SubscriptionTier, user.SubscriptionExpiresAt)
-
-	data := CommunityData{Tab: tab, PremiumView: premium, MeID: user.ID, AddFriendErr: friendAddErrors[r.URL.Query().Get("err")],
+	data := CommunityData{Tab: tab, PremiumView: premium, AddFriendErr: friendAddErrors[r.URL.Query().Get("err")],
 		ShareURL: shareURL(a.referralLink(user.ReferralCode.String))}
-
-	if tab == "friends" {
-		if !premium {
-			data.Upsell = "Раздел «Контакты» доступен только с подпиской 888 ₽/мес"
-			a.render(w, "community.html", data)
-			return
-		}
-		people, err := a.Store.FriendsRaw(user.ID)
-		if err == nil {
-			people, err = attachBadgeIcons(a.Store, people)
-		}
-		if err != nil {
-			a.serverError(w, err)
-			return
-		}
-		data.People = people
-		a.render(w, "community.html", data)
-		return
+	if !premium {
+		data.Upsell = "Premium открывает уровни всех участников и твоих контактов"
 	}
 
-	people, err := a.Store.AllUsersRanked()
+	week, err := a.Store.WeekDoneCounts(weekStart(a.now()).Format("2006-01-02"))
 	if err != nil {
 		a.serverError(w, err)
 		return
 	}
-	if premium {
-		people, err = attachBadgeIcons(a.Store, people)
-		if err != nil {
-			a.serverError(w, err)
+
+	var people []store.PersonRow
+	if tab == "friends" {
+		if !premium {
+			a.render(w, "community.html", data)
 			return
 		}
-		data.People = people
+		people, err = a.Store.FriendsRaw(user.ID)
 	} else {
-		// Без Premium видно только себя — остальные участники скрыты.
-		for _, p := range people {
-			if p.ID == user.ID {
-				data.People = append(data.People, p)
-			}
+		people, err = a.Store.AllUsersRanked()
+	}
+	if err != nil {
+		a.serverError(w, err)
+		return
+	}
+
+	// Рейтинг недели: больше выполнено за неделю — выше; при равенстве — уровень.
+	sort.SliceStable(people, func(i, j int) bool {
+		if week[people[i].ID] != week[people[j].ID] {
+			return week[people[i].ID] > week[people[j].ID]
 		}
-		data.HiddenCount = len(people) - len(data.People)
-		data.Upsell = "Оформи подписку 888 ₽/мес, чтобы видеть всех участников, их уровень, стрик и достижения 🔒"
+		return people[i].Level > people[j].Level
+	})
+	for i, p := range people {
+		me := p.ID == user.ID
+		if tab == "" && i >= ratingLimit && !me {
+			continue
+		}
+		row := FriendRow{
+			Rank: i + 1, ID: p.ID, Name: p.Name, Initial: initial(p.Name), WeekDone: week[p.ID], Me: me,
+		}
+		if premium {
+			row.Level, row.Diamond = p.Level, p.Level >= 100
+			row.Username = p.Username.String
+			row.CanAdd = tab == "" && !me && p.Username.Valid && p.Username.String != ""
+		}
+		data.People = append(data.People, row)
 	}
 
 	a.render(w, "community.html", data)
-}
-
-func attachBadgeIcons(st *store.Store, people []store.PersonRow) ([]store.PersonRow, error) {
-	people, err := st.AttachBadges(people)
-	if err != nil {
-		return nil, err
-	}
-	for i := range people {
-		for _, code := range people[i].Badges {
-			if icon := achievements.MetaByCode(code).Icon; icon != "" {
-				people[i].BadgeIcons = append(people[i].BadgeIcons, icon)
-			}
-		}
-	}
-	return people, nil
 }
 
 // Тексты ошибок — те же, что отдавал POST /api/friends/add в Node-версии.

@@ -1,9 +1,11 @@
 {{define "content"}}
 <div class="welcome">
+  <div class="welcome-logo">{{template "icon" "file"}}</div>
   <h1>Мы обновили соглашение</h1>
   <p class="subtitle">Редакция от {{.Version}}. Прочитай, что изменилось, и подтверди, чтобы продолжить.</p>
   <p><a href="/terms">Открыть пользовательское соглашение</a></p>
-  <form method="POST" action="/terms/accept" data-terms-form>
+  <div class="spacer"></div>
+  <form method="POST" action="/terms/accept" data-terms-form style="flex:0">
     <label class="terms-check">
       <input type="checkbox" name="terms" value="1" required data-terms-check>
       <span>Я принимаю <a href="/terms">пользовательское соглашение</a> и даю согласие на обработку персональных данных</span>

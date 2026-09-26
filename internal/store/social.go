@@ -14,8 +14,6 @@ type PersonRow struct {
 	Level    int
 	Streak   int
 	Badges   []string
-	// BadgeIcons — иконки бейджей для отображения (заполняет handler).
-	BadgeIcons []string
 	Diamond    bool
 }
 

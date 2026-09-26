@@ -29,6 +29,10 @@ type WalletData struct {
 	PayoutToday    bool
 	NextPayout     string // "15 октября"
 	Message        string
+
+	HasPartnerPassword bool   // пароль кабинета партнёра в браузере (/partner)
+	PartnerPasswordMsg string
+	ReferralCode       string
 }
 
 type InvitedView struct {
@@ -117,6 +121,11 @@ func (a *App) handleWalletShow(w http.ResponseWriter, r *http.Request) {
 		Message:    walletMessages[r.URL.Query().Get("withdraw")],
 	}
 	data.ShareURL = shareURL(data.Link)
+	data.ReferralCode = user.ReferralCode.String
+	data.PartnerPasswordMsg = partnerPasswordMessages[r.URL.Query().Get("partner_pw")]
+	if hash, err := a.Store.AgentPasswordHash(user.ID); err == nil {
+		data.HasPartnerPassword = hash != ""
+	}
 	data.RateLabel, data.RateHint, data.NoSubscription = a.partnerRate(user, paying)
 
 	for _, p := range invited {

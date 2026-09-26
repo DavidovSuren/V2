@@ -1,9 +1,13 @@
 {{define "content"}}
-<h1>Пропустить действие?</h1>
-<p class="subtitle">Ты уверен(а), что хочешь пропустить сегодняшнее действие? Это не страшно, но оно останется тем же и завтра — прогресс просто немного сдвинется.</p>
-
+<div class="page-head">
+  <a href="/" class="back" aria-label="Назад">{{template "icon" "arrow-left"}}</a>
+  <h1>Перенести на завтра?</h1>
+</div>
+<div class="card">
+  <p class="subtitle" style="color:var(--text-soft);line-height:1.55;margin:0">Задание останется тем же и завтра — план просто сдвинется на день. Стрик при этом начнётся заново.</p>
+</div>
 <form method="POST" action="/today/skip">
-  <button class="btn btn-primary mb-8" type="submit">Пропустить</button>
+  <button class="btn btn-secondary mb-8" type="submit">Перенести на завтра</button>
 </form>
-<a class="btn btn-secondary" href="/">Остаться</a>
+<a class="btn btn-primary" href="/diary">{{template "icon" "check"}}Всё-таки сделаю сегодня</a>
 {{end}}

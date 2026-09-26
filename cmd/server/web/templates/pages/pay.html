@@ -1,11 +1,17 @@
 {{define "content"}}
+<div class="page-head">
+  <a href="/plans" class="back" aria-label="Назад">{{template "icon" "arrow-left"}}</a>
+  <h1>{{if .Unavailable}}Оплата недоступна{{else}}Оплата {{.TierName}}{{end}}</h1>
+</div>
 {{if .Unavailable}}
-<h1>Оплата временно недоступна</h1>
-<p class="subtitle">Мы уже знаем и чиним. Напиши в поддержку — поможем оформить подписку вручную.</p>
+<div class="card">
+  <p class="subtitle" style="color:var(--text-soft);margin:0">Оплата временно недоступна. Напиши в поддержку — поможем оформить подписку.</p>
+</div>
 <a class="btn btn-secondary" href="/plans">К тарифам</a>
 {{else}}
-<h1>Оплата {{.TierName}}</h1>
-<p class="subtitle">Сейчас откроется окно оплаты Telegram. Если не открылось — нажми кнопку.</p>
+<div class="card">
+  <p class="subtitle" style="color:var(--text-soft);margin:0">Сейчас откроется окно оплаты Telegram. Если не открылось — нажми кнопку.</p>
+</div>
 <div id="invoice" data-invoice-link="{{.Link}}"></div>
 <button class="btn btn-primary" type="button" id="pay-button">Оплатить</button>
 <a class="btn btn-text mt-8" href="/plans">Отмена</a>

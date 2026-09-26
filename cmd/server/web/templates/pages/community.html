@@ -1,61 +1,50 @@
 {{define "content"}}
-<h1>Сообщество</h1>
+<h1 class="page-title">Друзья</h1>
 <div class="segmented">
-  <a href="/community" class="{{if ne .Tab "friends"}}active{{end}}">Все участники</a>
-  <a href="/community?tab=friends" class="{{if eq .Tab "friends"}}active{{end}}">Контакты</a>
+  <a href="/community" class="{{if ne .Tab "friends"}}active{{end}}">Рейтинг недели</a>
+  <a href="/community?tab=friends" class="{{if eq .Tab "friends"}}active{{end}}">Мои контакты</a>
 </div>
 
-{{if .Upsell}}<div class="upsell-banner">{{.Upsell}}</div>{{end}}
+{{if .Upsell}}<a class="banner-gold" href="/plans"><span>{{.Upsell}}</span><span>{{template "icon" "lock"}}</span></a>{{end}}
 
-{{if eq .Tab "friends"}}
-{{if .PremiumView}}
-{{if .AddFriendErr}}<div class="toast mb-8">{{.AddFriendErr}}</div>{{end}}
-<form method="POST" action="/friends/add" class="add-friend-row">
-  <input type="text" name="username" placeholder="@username друга">
-  <button class="btn btn-primary" type="submit">Добавить</button>
+{{if and (eq .Tab "friends") .PremiumView}}
+{{if .AddFriendErr}}<div class="toast">{{.AddFriendErr}}</div>{{end}}
+<form method="POST" action="/friends/add" class="add-row">
+  <input type="text" name="username" placeholder="@username друга" autocomplete="off">
+  <button class="btn btn-primary btn-sm" type="submit">Добавить</button>
 </form>
 {{end}}
-{{end}}
 
-<div class="card">
-  {{if .People}}
-    {{range .People}}
-    <div class="list-item">
-      <div class="list-avatar">
-        {{if eq .Gender.String "female"}}👩{{else if eq .Gender.String "male"}}🧑{{else}}👤{{end}}
-        {{if .Diamond}}<span class="diamond-badge">💎</span>{{end}}
-      </div>
-      <div style="flex:1;min-width:0">
-        <div class="list-name">{{.Name}}{{if eq .ID $.MeID}} <span class="list-sub">(ты)</span>{{end}}</div>
-        {{if $.PremiumView}}
-        <div class="list-sub">{{if .Username.Valid}}@{{.Username.String}} · {{end}}<span class="streak-mini">{{template "icon" "flame"}}{{.Streak}}</span>{{range .BadgeIcons}}<span class="badge-mini">{{template "icon" .}}</span>{{end}}</div>
-        {{end}}
-      </div>
-      {{if $.PremiumView}}<div class="list-level">Ур. {{.Level}}</div>
-        {{if and (ne $.Tab "friends") (ne .ID $.MeID) .Username.Valid}}
-        <form method="POST" action="/friends/add">
-          <input type="hidden" name="username" value="{{.Username.String}}">
-          <button class="btn-text" type="submit" title="Добавить в контакты">➕</button>
-        </form>
-        {{end}}
-      {{end}}
+{{if or (ne .Tab "friends") .PremiumView}}
+<div class="card" style="padding:4px 16px">
+  {{range .People}}
+  <div class="list-item">
+    <span class="rank{{if le .Rank 2}} rank-top{{end}}">{{.Rank}}</span>
+    <div class="avatar{{if .Me}} avatar-me{{end}}">{{.Initial}}{{if .Diamond}}<span class="avatar-diamond" title="Уровень 100">{{template "icon" "diamond"}}</span>{{end}}</div>
+    <div style="flex:1;min-width:0">
+      <div class="list-name">{{.Name}}{{if .Me}} · ты{{end}}</div>
+      <div class="list-sub">{{.WeekDone}} из 7 на этой неделе{{if .Username}} · @{{.Username}}{{end}}</div>
     </div>
+    {{if $.PremiumView}}<span class="list-level">Ур. {{.Level}}</span>{{end}}
+    {{if .CanAdd}}
+    <form method="POST" action="/friends/add">
+      <input type="hidden" name="username" value="{{.Username}}">
+      <button class="icon-btn" type="submit" title="Добавить в контакты" aria-label="Добавить в контакты">+</button>
+    </form>
     {{end}}
+  </div>
   {{else}}
-    <div class="subtitle" style="margin:0">Пока никого нет</div>
-  {{end}}
-  {{if .HiddenCount}}
-  <div class="list-item" style="justify-content:center;color:var(--tg-hint-color)">🔒 Ещё {{.HiddenCount}} участников скрыто — доступно с Premium</div>
+  <div class="list-item"><span class="list-sub">{{if eq .Tab "friends"}}Пока никого — позови друга или найди по @username{{else}}Пока никого нет{{end}}</span></div>
   {{end}}
 </div>
+{{end}}
 
 <div class="invite-card">
   <div style="flex:1">
     <div class="invite-title">Пригласи и зарабатывай</div>
-    <div class="subtitle" style="margin:0">До 50% с каждой подписки друга</div>
+    <div class="list-sub" style="color:var(--text-soft)">До 50% с каждой подписки друга</div>
   </div>
-  {{if .ShareURL}}<a class="btn-gold-sm" href="{{.ShareURL}}" data-tg-link>Позвать</a>{{end}}
-  <a class="btn-link" href="/wallet">Кошелёк</a>
+  {{if .ShareURL}}<a class="btn-gold-sm" href="{{.ShareURL}}" data-tg-link>Позвать</a>{{else}}<a class="btn-gold-sm" href="/wallet">Позвать</a>{{end}}
 </div>
 
 {{template "nav" "community"}}

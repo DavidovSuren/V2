@@ -29,51 +29,49 @@ func tierInfos() []TierInfo {
 	return out
 }
 
+// ProfileData — экран «Я» (макет 09).
 type ProfileData struct {
-	Name              string
-	AgeGroup          string
-	Gender            string
-	SubscriptionLabel string
-	ProgressPct       float64
-	Level             int
-	XP                int
-	StreakCurrent     int
-	ReferralCode      string
-	PartnerPasswordMsg string
-	HasPartnerPassword bool
-	Tiers             []TierInfo
-	PromoError        string
-	Diamond           bool
-	Theme             string // dark | light | auto
+	Name       string
+	Initial    string
+	Diamond    bool
+	TierPill   string // "Premium до 24 октября" / "Пробный: 2 дн." / "Без подписки"
+	TierActive bool
+	Theme      string // dark | light | auto
+	Balance    int
+	RemindAt   string
+	PromoError string
+	Support    string
 }
 
 func (a *App) handleProfile(w http.ResponseWriter, r *http.Request) {
 	user := userFromCtx(r)
-	progressPct, level := leveling.ProgressFromCompleted(user.CompletedCount)
+	_, level := leveling.ProgressFromCompleted(user.CompletedCount)
 
-	tierLabel := "Бесплатно"
-	if active := subscription.ActiveTier(user.SubscriptionTier, user.SubscriptionExpiresAt); active != "" {
-		tierLabel = "Version 2.0 " + referrals.TierNames[active]
+	data := ProfileData{
+		Name: user.Name, Initial: initial(user.Name), Diamond: level >= 100,
+		Theme: themePref(r), RemindAt: defaultRemindAt,
+		PromoError: r.URL.Query().Get("promo_err"), Support: SupportContact,
 	}
-
-	hash, err := a.Store.AgentPasswordHash(user.ID)
+	if active := subscription.ActiveTier(user.SubscriptionTier, user.SubscriptionExpiresAt); active != "" {
+		data.TierActive = true
+		data.TierPill = referrals.TierNames[active] + " до " + humanDateOf(user.SubscriptionExpiresAt.String)
+	} else if left := subscription.TrialDaysLeft(user.CreatedAt, a.now()); left > 0 {
+		data.TierPill = fmt.Sprintf("Пробный: %d дн.", left)
+	} else {
+		data.TierPill = "Без подписки"
+	}
+	summary, err := a.Store.WalletSummary(user.ID)
 	if err != nil {
 		a.serverError(w, err)
 		return
 	}
+	data.Balance = summary.Balance
 
-	a.render(w, "profile.html", ProfileData{
-		Name: user.Name, AgeGroup: user.AgeGroup, Gender: user.Gender.String,
-		SubscriptionLabel: tierLabel, ProgressPct: progressPct, Level: level, XP: user.XP,
-		StreakCurrent: user.StreakCurrent, ReferralCode: user.ReferralCode.String,
-		PartnerPasswordMsg: partnerPasswordMessages[r.URL.Query().Get("partner_pw")],
-		HasPartnerPassword: hash != "",
-		Tiers:              tierInfos(),
-		PromoError:         r.URL.Query().Get("promo_err"),
-		Diamond:            level >= 100,
-		Theme:              themePref(r),
-	})
+	a.render(w, "profile.html", data)
 }
+
+// defaultRemindAt — время ежедневного напоминания по умолчанию (МСК).
+const defaultRemindAt = "15:15"
 
 var errUnknownTier = errors.New("неизвестный тариф")
 

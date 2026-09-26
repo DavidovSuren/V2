@@ -205,3 +205,40 @@ func (s *Store) UsersRegisteredSince(since string) ([]RecentUser, error) {
 	}
 	return out, rows.Err()
 }
+
+// ActionsSince — действия пользователя (done/skip) по датам начиная с since (YYYY-MM-DD).
+func (s *Store) ActionsSince(userID int64, since string) (map[string]string, error) {
+	rows, err := s.DB.Query(`SELECT action_date, action FROM action_log WHERE user_id = $1 AND action_date >= $2`, userID, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]string{}
+	for rows.Next() {
+		var date, action string
+		if err := rows.Scan(&date, &action); err != nil {
+			return nil, err
+		}
+		out[date] = action
+	}
+	return out, rows.Err()
+}
+
+// WeekDoneCounts — сколько заданий каждый пользователь выполнил начиная с since.
+func (s *Store) WeekDoneCounts(since string) (map[int64]int, error) {
+	rows, err := s.DB.Query(`SELECT user_id, COUNT(*)::int FROM action_log WHERE action = 'done' AND action_date >= $1 GROUP BY user_id`, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[int64]int{}
+	for rows.Next() {
+		var id int64
+		var n int
+		if err := rows.Scan(&id, &n); err != nil {
+			return nil, err
+		}
+		out[id] = n
+	}
+	return out, rows.Err()
+}

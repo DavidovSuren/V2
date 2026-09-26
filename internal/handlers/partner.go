@@ -156,15 +156,15 @@ func (a *App) handlePartnerPasswordSet(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	password := r.FormValue("password")
 	if len([]rune(password)) < minPartnerPasswordLen {
-		http.Redirect(w, r, "/profile?partner_pw=short#partner", http.StatusSeeOther)
+		http.Redirect(w, r, "/wallet?partner_pw=short#partner", http.StatusSeeOther)
 		return
 	}
 	if len(password) > 72 { // предел bcrypt
-		http.Redirect(w, r, "/profile?partner_pw=long#partner", http.StatusSeeOther)
+		http.Redirect(w, r, "/wallet?partner_pw=long#partner", http.StatusSeeOther)
 		return
 	}
 	if password != r.FormValue("password2") {
-		http.Redirect(w, r, "/profile?partner_pw=mismatch#partner", http.StatusSeeOther)
+		http.Redirect(w, r, "/wallet?partner_pw=mismatch#partner", http.StatusSeeOther)
 		return
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -176,5 +176,5 @@ func (a *App) handlePartnerPasswordSet(w http.ResponseWriter, r *http.Request) {
 		a.serverError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/profile?partner_pw=ok#partner", http.StatusSeeOther)
+	http.Redirect(w, r, "/wallet?partner_pw=ok#partner", http.StatusSeeOther)
 }

@@ -59,10 +59,15 @@ document.querySelectorAll('[data-close-dialog]').forEach(function (btn) {
   });
 });
 
-// Автопоказ celebrate-модалки, если сервер пометил её в разметке.
+// Автопоказ модалок, если сервер пометил их в разметке: поздравление с
+// наградой и промокод с ошибкой.
 var celebrateDlg = document.getElementById('modal-celebrate');
 if (celebrateDlg && celebrateDlg.dataset.autoshow === '1') {
   celebrateDlg.showModal();
+}
+var promoDlg = document.getElementById('modal-promo');
+if (promoDlg && promoDlg.dataset.autoshowPromo === '1') {
+  promoDlg.showModal();
 }
 
 // Ссылки t.me (например, «Поделиться») внутри Telegram открываем через

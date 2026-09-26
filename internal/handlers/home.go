@@ -13,35 +13,55 @@ import (
 )
 
 type HomeData struct {
+	Name              string
+	DateLabel         string // "Суббота, 26 сентября"
+	DayNumber         int    // день пути: выполнено + 1 (если сегодня уже выполнено — выполнено)
+	StreakCurrent     int
+	Level             int
+	XP                int
 	ProgressPct       float64
-	CircleOffset      float64
-	DayLabel          string
 	Category          string
 	TaskText          string
 	TaskWhy           string
 	Finished          bool
 	CanActToday       bool
+	DoneToday         bool
 	FocusAreas        []string
 	Celebrate         *achievements.Meta
 	CelebrateLevel100 bool
-	Diamond           bool // уровень 100 — алмаз у иконки профиля
+	Diamond           bool // уровень 100 — алмаз у имени
 	TrialDaysLeft     int  // > 0 — идёт пробный период без подписки
 	Quote             string
+	Week              []WeekDay
+	JustDone          bool // ?done=1 — только что закрыл день: конфетти (этап 10)
 }
 
 func (a *App) renderHome(w http.ResponseWriter, r *http.Request, user *models.User) {
-	progressPct, _ := leveling.ProgressFromCompleted(user.CompletedCount)
-	circumference := 326.7 // 2*pi*52, совпадает с исходной разметкой
-	offset := circumference - (progressPct/100)*circumference
+	now := a.now()
+	progressPct, level := leveling.ProgressFromCompleted(user.CompletedCount)
+	today := now.In(reports.MoscowLocation()).Format("2006-01-02")
+	doneToday := user.LastActionDate.Valid && user.LastActionDate.String == today
 
 	data := HomeData{
-		ProgressPct:  progressPct,
-		CircleOffset: offset,
-		CanActToday:  !user.LastActionDate.Valid || user.LastActionDate.String != reports.TodayMoscow(),
-		Diamond:      user.Level >= 100,
+		Name:          user.Name,
+		DateLabel:     longDate(now.In(reports.MoscowLocation())),
+		DayNumber:     user.CompletedCount + 1,
+		StreakCurrent: user.StreakCurrent,
+		Level:         level,
+		XP:            user.XP,
+		ProgressPct:   progressPct,
+		CanActToday:   !doneToday,
+		Diamond:       user.Level >= 100,
+		JustDone:      r.URL.Query().Get("done") == "1",
+	}
+	if doneToday && user.CompletedCount > 0 {
+		data.DayNumber = user.CompletedCount
+	}
+	if data.DayNumber > 365 {
+		data.DayNumber = 365
 	}
 	if subscription.ActiveTier(user.SubscriptionTier, user.SubscriptionExpiresAt) == "" {
-		data.TrialDaysLeft = subscription.TrialDaysLeft(user.CreatedAt, a.now())
+		data.TrialDaysLeft = subscription.TrialDaysLeft(user.CreatedAt, now)
 	}
 
 	if focus := r.URL.Query().Get("focus"); focus != "" {
@@ -50,16 +70,21 @@ func (a *App) renderHome(w http.ResponseWriter, r *http.Request, user *models.Us
 	if c := r.URL.Query().Get("celebrate"); c != "" {
 		if c == "level100" {
 			data.CelebrateLevel100 = true
-		} else {
-			meta := achievements.MetaByCode(c)
+		} else if meta := achievements.MetaByCode(c); meta.Name != "" {
 			data.Celebrate = &meta
 		}
 	}
 
-	today := a.now().In(reports.MoscowLocation()).Format("2006-01-02")
+	actions, err := a.Store.ActionsSince(user.ID, weekStart(now).Format("2006-01-02"))
+	if err != nil {
+		a.serverError(w, err)
+		return
+	}
+	data.Week = buildWeek(now, actions)
+	data.DoneToday = actions[today] == "done"
+
 	if user.DayIndex >= 365 {
 		data.Finished = true
-		data.DayLabel = "Путь пройден полностью"
 		data.Quote = quotes.ForUser(user.TgID, today, "")
 		a.render(w, "home.html", data)
 		return
@@ -73,7 +98,6 @@ func (a *App) renderHome(w http.ResponseWriter, r *http.Request, user *models.Us
 	data.Category = row.Category
 	data.TaskText = row.Text
 	data.TaskWhy = row.Why
-	data.DayLabel = dayLabel(user.CompletedCount)
 	data.Quote = quotes.ForUser(user.TgID, today, row.Category)
 
 	a.render(w, "home.html", data)

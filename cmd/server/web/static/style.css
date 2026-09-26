@@ -316,3 +316,38 @@ dialog::backdrop { background: var(--backdrop); }
 .invite-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px; background: var(--gold-tint); border: 1px solid var(--gold-line); margin-bottom: var(--gap); }
 .invite-title { font-size: 14px; font-weight: 600; color: var(--gold-text); }
 .btn-gold-sm { display: inline-flex; align-items: center; height: 38px; padding: 0 14px; border-radius: 12px; background: var(--gold); color: var(--on-gold); font-size: 14px; font-weight: 600; text-decoration: none; flex-shrink: 0; }
+
+/* ---- Этап 9: экраны ---- */
+.home-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: var(--gap); }
+.home-title { font-family: var(--font-display); font-size: 26px; font-weight: 600; line-height: 1.2; }
+.diamond-badge { display: inline-flex; color: var(--gold); vertical-align: middle; }
+.diamond-badge .i { width: 20px; height: 20px; }
+.task-card { padding: 22px 20px 20px; display: flex; flex-direction: column; gap: 14px; }
+.task-text { font-family: var(--font-display); font-size: 23px; line-height: 1.3; font-weight: 500; }
+.task-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.task-done { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 8px 0; }
+.done-circle { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--gold); color: var(--gold); display: flex; align-items: center; justify-content: center; }
+.done-circle .i { width: 30px; height: 30px; }
+.week { display: flex; gap: 6px; margin-bottom: var(--gap); }
+.week-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: var(--text-3); }
+.week-today { color: var(--text); font-weight: 600; }
+.week-bar { width: 100%; height: 6px; border-radius: 3px; background: var(--track); }
+.week-done { background: var(--gold); }
+.week-today.week-day .week-bar.week-today { background: transparent; border: 1px dashed var(--gold); }
+.week-bar.week-today { background: transparent; border: 1px dashed var(--gold); }
+.quiz-head { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+.quiz-progress { flex: 1; }
+.quiz-count { font-size: 13px; color: var(--text-2); white-space: nowrap; }
+.back-placeholder { width: 24px; }
+.quiz-question { font-size: 26px; line-height: 1.25; margin-bottom: 24px; }
+.scale-legend { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-3); margin-top: 8px; }
+.add-row { display: flex; gap: 8px; margin-bottom: var(--gap); }
+.add-row input { flex: 1; min-width: 0; }
+.add-row .btn { height: 52px; }
+a.banner-gold { text-decoration: none; }
+.banner-gold .i { width: 18px; height: 18px; }
+.profile-head { display: flex; align-items: center; gap: 14px; margin-bottom: var(--gap); }
+.profile-avatar { position: relative; width: 64px; height: 64px; border-radius: 50%; background: var(--surface-2); border: 1.5px solid var(--gold); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 26px; font-weight: 600; flex-shrink: 0; }
+.profile-name { font-family: var(--font-display); font-size: 24px; font-weight: 600; margin-bottom: 4px; }
+.wallet-card .flex { gap: 10px; align-items: flex-start; }
+.wallet-card .pill { white-space: normal; height: auto; min-height: 26px; padding: 4px 10px; font-size: 12px; text-align: right; line-height: 1.3; }

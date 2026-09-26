@@ -28,9 +28,9 @@
   {{end}}
 </div>
 
-<div class="card stat-line">
-  <div><div class="subtitle" style="margin:0">Опыт</div><div class="stat-value">{{digits .XP}}</div></div>
-  <div><div class="subtitle" style="margin:0">Стрик</div><div class="stat-value">{{.StreakCurrent}} дн.</div></div>
+<div class="stat-row">
+  <div class="card"><div class="stat-label">Опыт</div><div class="stat-value">{{digits .XP}}</div></div>
+  <div class="card"><div class="stat-label">Стрик</div><div class="stat-value">{{.StreakCurrent}} дн.</div></div>
 </div>
 
 <div class="section-label" id="awards">Награды · {{.AwardsUnlocked}} из {{len .Awards}}</div>

@@ -130,7 +130,8 @@ func TestQuizBuildsPersonalSchedule(t *testing.T) {
 	}
 
 	home := a.do(t, "GET", last.Location, nil, "", a.session("1"))
-	mustContain(t, home.Body, "Твой план готов", "День 1 из 365", want[0].Text, "ВЫПОЛНИЛ(А)")
+	mustContain(t, home.Body, "Твой план готов", "User 1, день 1", template.HTMLEscapeString(want[0].Text), ">Сделал</a>", "Перенести на завтра")
+	mustNotContain(t, home.Body, "AI-карточка")
 
 	// Анкета второй раз не проходится: раньше это падало на PK user_schedule
 	// и повторно начисляло XP.
@@ -185,7 +186,7 @@ func TestDiaryCompletesTask(t *testing.T) {
 	if r := a.get(t, "1", "/today/skip"); r.Location != "/" {
 		t.Errorf("экран пропуска после действия: %q", r.Location)
 	}
-	mustContain(t, a.get(t, "1", "/").Body, "Выполнено сегодня")
+	mustContain(t, a.get(t, "1", "/").Body, "День 1 закрыт", "User 1, день 1", "week-bar week-done")
 
 	// Динамика настроения на странице дневника.
 	mustContain(t, a.get(t, "1", "/diary").Body, "Нед. ", "/5")
@@ -275,7 +276,7 @@ func TestLevel100GrantsDiamondAndPremium(t *testing.T) {
 			t.Errorf("нет бейджа %s", c)
 		}
 	}
-	mustContain(t, a.do(t, "GET", r.Location, nil, "", a.session("1")).Body, "УРОВЕНЬ 100!", "Все 365 заданий пройдены!")
+	mustContain(t, a.do(t, "GET", r.Location, nil, "", a.session("1")).Body, "Уровень 100", "Все 365 заданий пройдены", `data-autoshow="1"`)
 
 	// Путь пройден: дальше ни выполнить, ни пропустить.
 	a.exec(t, "UPDATE users SET last_action_date=NULL WHERE id=$1", u.ID)
@@ -500,7 +501,8 @@ func TestWalletForEveryone(t *testing.T) {
 	if r := a.get(t, "1", "/wallet"); r.Code != 200 {
 		t.Fatalf("кошелёк: %d", r.Code)
 	}
-	mustContain(t, a.get(t, "1", "/profile").Body, `href="/wallet"`, "Партнёрская программа")
+	mustContain(t, a.get(t, "1", "/profile").Body, `href="/wallet"`, "Кошелёк")
+	mustContain(t, a.get(t, "1", "/wallet").Body, "Кабинет партнёра в браузере", `action="/partner/password"`)
 	if r := a.post(t, "1", "/agent/become", nil); r.Code == http.StatusSeeOther {
 		t.Error("маршрут «Стать агентом» ещё существует")
 	}
@@ -513,13 +515,13 @@ func TestCommunityVisibility(t *testing.T) {
 	a.exec(t, "UPDATE users SET level=100, name='Звезда' WHERE id=$1", star.ID)
 	a.exec(t, "INSERT INTO achievements (user_id, code, unlocked_at) VALUES ($1,'lvl100','x')", star.ID)
 
-	// Без Premium других участников не видно — только себя и счётчик скрытых.
+	// Без Premium — имена и «N из 7 на этой неделе», но без уровней и алмазов.
 	free := a.get(t, "1", "/community").Body
-	mustContain(t, free, "Оформи подписку 888", "Ещё 1 участников скрыто")
-	mustNotContain(t, free, "Звезда", "Ур. 100", "💎")
+	mustContain(t, free, "Premium открывает уровни всех участников и твоих контактов", "Звезда", "0 из 7 на этой неделе", "User 1 · ты", "avatar-me")
+	mustNotContain(t, free, "Ур. 100", "avatar-diamond")
 
 	friends := a.get(t, "1", "/community?tab=friends").Body
-	mustContain(t, friends, "доступен только с подпиской 888")
+	mustContain(t, friends, "Premium открывает уровни")
 	mustNotContain(t, friends, `action="/friends/add"`)
 
 	// Plus не открывает уровни — только Premium.
@@ -528,8 +530,8 @@ func TestCommunityVisibility(t *testing.T) {
 
 	a.post(t, "1", "/subscribe", url.Values{"tier": {"premium888"}})
 	prem := a.get(t, "1", "/community").Body
-	mustContain(t, prem, "Звезда", "Ур. 100", "💎")
-	mustNotContain(t, prem, "Оформи подписку 888", "скрыто")
+	mustContain(t, prem, "Звезда", "Ур. 100", "avatar-diamond")
+	mustNotContain(t, prem, "Premium открывает уровни")
 
 	// Истёкшая подписка снова прячет уровни.
 	a.exec(t, "UPDATE users SET subscription_expires_at=$1 WHERE tg_id='1'", time.Now().Add(-time.Hour).UTC().Format(time.RFC3339))
@@ -599,7 +601,7 @@ func TestPromo100LVL(t *testing.T) {
 	mustContain(t, progress, "365 из 365 заданий", Digits(leveling.FullYearXP()), "365 дн.", "Уровень 100 из 100", "Алмаз получен", "Награды · 10 из 10")
 	mustNotContain(t, progress, ">0%<")
 	mustContain(t, a.get(t, "1", "/").Body, "diamond-badge", "100%")
-	mustContain(t, a.get(t, "1", "/profile").Body, "diamond-badge", "<strong>100</strong>")
+	mustContain(t, a.get(t, "1", "/profile").Body, "diamond-badge", "Premium до ")
 	if n := a.count(t, "SELECT COUNT(*) FROM achievements WHERE user_id=$1", u.ID); n != 10 {
 		t.Errorf("наград %d, want 10", n)
 	}
@@ -668,7 +670,7 @@ func TestWeeklyReportAndLogout(t *testing.T) {
 	a.exec(t, "INSERT INTO action_log (user_id, action_date, action, category) VALUES ($1, $2, 'skip', NULL)", u.ID, reports.FromNDaysAgo(2))
 
 	rep := a.get(t, "1", "/reports/weekly").Body
-	mustContain(t, rep, "<strong>1 / 7</strong>", "<strong>2</strong>", "<strong>1 дней</strong>")
+	mustContain(t, rep, `<div class="stat-value">1 / 7</div>`, `<div class="stat-value">2</div>`, `<div class="stat-value">1 дн.</div>`)
 
 	r := a.post(t, "1", "/logout", nil)
 	c := cookieByName(r.Cookies, "v2_session")
@@ -708,4 +710,56 @@ func TestNewAwardsBackfilled(t *testing.T) {
 	if n := a.count(t, "SELECT COUNT(*) FROM achievements WHERE user_id=$1", a.user(t, "2").ID); n != 0 {
 		t.Errorf("новичку досеяно %d", n)
 	}
+}
+
+// Рейтинг недели: кто больше выполнил за неделю — выше.
+func TestWeeklyRating(t *testing.T) {
+	a := newDBApp(t)
+	a.newPlayer(t, "1", "")
+	busy := a.newPlayer(t, "2", "")
+	a.exec(t, "UPDATE users SET name='Активная' WHERE id=$1", busy.ID)
+	for i := 0; i < 3; i++ {
+		d := weekStart(time.Now()).AddDate(0, 0, i).Format("2006-01-02")
+		if d > reports.TodayMoscow() {
+			break
+		}
+		a.exec(t, "INSERT INTO action_log (user_id, action_date, action, category) VALUES ($1, $2, 'done', 'Тело') ON CONFLICT DO NOTHING", busy.ID, d)
+	}
+	body := a.get(t, "1", "/community").Body
+	if strings.Index(body, "Активная") > strings.Index(body, "User 1 · ты") {
+		t.Error("более активный участник ниже в рейтинге")
+	}
+	mustContain(t, body, "Рейтинг недели", "Мои контакты", "Пригласи и зарабатывай")
+}
+
+func TestProfileScreen(t *testing.T) {
+	a := newDBApp(t)
+	a.newPlayer(t, "1", "")
+	p := a.get(t, "1", "/profile").Body
+	mustContain(t, p, `<div class="profile-avatar">U`, "Пробный: 3 дн.", "Кошелёк", "0\u00a0₽", "Подписка", "Оформить",
+		"Отчёт недели", "Напоминание", "15:15", "Промокод", `id="modal-promo"`, "Выйти", SupportContact)
+	a.post(t, "1", "/subscribe", url.Values{"tier": {"plus369"}})
+	mustContain(t, a.get(t, "1", "/profile").Body, "Plus до ", "Сменить")
+	a.Now = func() time.Time { return time.Now().Add(40 * 24 * time.Hour) }
+	a.exec(t, "UPDATE users SET subscription_expires_at='2000-01-01T00:00:00Z' WHERE tg_id='1'")
+	mustContain(t, a.get(t, "1", "/profile").Body, "Без подписки")
+	// Ошибка промокода открывает окно промокода.
+	mustContain(t, a.get(t, "1", "/profile?promo_err=x").Body, `data-autoshow-promo="1"`)
+}
+
+func TestQuizScreen(t *testing.T) {
+	a := newDBApp(t)
+	a.onboard(t, "1", "")
+	q0 := a.get(t, "1", "/quiz/0").Body
+	mustContain(t, q0, "1 из 21", "data-autosubmit", "/static/quiz.js", "Мужчина", "Женщина")
+	mustNotContain(t, q0, `aria-label="Назад"`)
+	// «Далее» у вариантов — только запасной, для браузера без JS.
+	if strings.Count(q0, ">Далее<") != 1 || !strings.Contains(q0, "<noscript><button") {
+		t.Error("у вопроса с вариантами видна кнопка «Далее»")
+	}
+	q1 := a.get(t, "1", "/quiz/1").Body
+	mustContain(t, q1, "2 из 21", `aria-label="Назад"`, `href="/quiz/0"`, "совсем нет")
+	text := a.get(t, "1", "/quiz/17").Body
+	mustContain(t, text, ">Далее<")
+	mustNotContain(t, text, "data-autosubmit")
 }
