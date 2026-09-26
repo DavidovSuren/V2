@@ -1,0 +1,11 @@
+{{define "theme-switch"}}
+<div class="card">
+  <div class="subtitle" style="margin-bottom:10px">Оформление</div>
+  <form method="POST" action="/theme" class="segmented" style="margin:0;background:var(--bg)">
+    <input type="hidden" name="back" value="/profile">
+    <button type="submit" name="theme" value="light"{{if eq . "light"}} class="active"{{end}}>{{template "icon" "sun"}}Светлая</button>
+    <button type="submit" name="theme" value="dark"{{if eq . "dark"}} class="active"{{end}}>{{template "icon" "moon"}}Тёмная</button>
+    <button type="submit" name="theme" value="auto"{{if eq . "auto"}} class="active"{{end}}>Как в Telegram</button>
+  </form>
+</div>
+{{end}}

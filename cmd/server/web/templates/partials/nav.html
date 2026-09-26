@@ -1,19 +1,8 @@
 {{define "nav"}}
 <nav class="bottom-nav">
-  <a class="nav-item{{if eq . "home"}} active{{end}}" href="/">
-    <div class="icon">🏠</div><div>Главная</div>
-  </a>
-  <a class="nav-item{{if eq . "progress"}} active{{end}}" href="/progress">
-    <div class="icon">📊</div><div>Прогресс</div>
-  </a>
-  <a class="nav-item{{if eq . "diary"}} active{{end}}" href="/diary">
-    <div class="icon">📔</div><div>Дневник</div>
-  </a>
-  <a class="nav-item{{if eq . "community"}} active{{end}}" href="/community">
-    <div class="icon">🌐</div><div>Сообщество</div>
-  </a>
-  <a class="nav-item{{if eq . "profile"}} active{{end}}" href="/profile">
-    <div class="icon">👤</div><div>Профиль</div>
-  </a>
+  <a class="nav-item{{if eq . "home"}} active{{end}}" href="/">{{template "icon" "home"}}Сегодня</a>
+  <a class="nav-item{{if eq . "progress"}} active{{end}}" href="/progress">{{template "icon" "path"}}Путь</a>
+  <a class="nav-item{{if eq . "community"}} active{{end}}" href="/community">{{template "icon" "users"}}Друзья</a>
+  <a class="nav-item{{if eq . "profile"}} active{{end}}" href="/profile">{{template "icon" "user"}}Я</a>
 </nav>
 {{end}}

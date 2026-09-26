@@ -44,6 +44,7 @@ type ProfileData struct {
 	Tiers             []TierInfo
 	PromoError        string
 	Diamond           bool
+	Theme             string // dark | light | auto
 }
 
 func (a *App) handleProfile(w http.ResponseWriter, r *http.Request) {
@@ -70,6 +71,7 @@ func (a *App) handleProfile(w http.ResponseWriter, r *http.Request) {
 		Tiers:              tierInfos(),
 		PromoError:         r.URL.Query().Get("promo_err"),
 		Diamond:            level >= 100,
+		Theme:              themePref(r),
 	})
 }
 

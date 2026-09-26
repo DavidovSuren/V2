@@ -7,7 +7,7 @@
 
   // После появления сессии перезагружаем только "/" — страница ошибки
   // приходит ответом на POST /onboarding, и reload предложил бы
-  // переотправить форму. Там сессия уже есть: достаточно нажать "Продолжить".
+  // переотправить форму. Там сессия уже есть: достаточно нажать "Начать".
   function bootstrap(body) {
     fetch('/auth/bootstrap', { method: 'POST', body: body })
       .then(function (r) { if (r.ok && location.pathname === '/') location.reload(); });
@@ -31,20 +31,12 @@
   tg.ready();
   tg.expand();
 
-  var tp = tg.themeParams || {};
-  var root = document.documentElement;
-  var map = {
-    bg_color: '--tg-theme-bg-color',
-    text_color: '--tg-theme-text-color',
-    hint_color: '--tg-theme-hint-color',
-    link_color: '--tg-theme-link-color',
-    button_color: '--tg-theme-button-color',
-    button_text_color: '--tg-theme-button-text-color',
-    secondary_bg_color: '--tg-theme-secondary-bg-color'
-  };
-  Object.keys(map).forEach(function (key) {
-    if (tp[key]) root.style.setProperty(map[key], tp[key]);
-  });
+  // У приложения своя тема (см. скрипт в <head>): шапку и фон Telegram
+  // подстраиваем под --bg, а не наоборот.
+  var bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+  if (bg) {
+    try { tg.setHeaderColor(bg); tg.setBackgroundColor(bg); } catch (e) { /* старый клиент */ }
+  }
 
   // #bootstrap-target существует только в разметке приветственного экрана
   // (не авторизован) — на остальных страницах сессия уже есть и слать

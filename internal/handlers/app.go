@@ -154,6 +154,7 @@ func (a *App) Routes() http.Handler {
 
 	mux.HandleFunc("GET /reports/weekly", a.requireOnboarded(a.requireAccess(a.handleWeeklyReport)))
 	mux.HandleFunc("GET /terms", a.handleTerms)
+	mux.HandleFunc("POST /theme", a.handleTheme)
 	mux.HandleFunc("POST /terms/accept", a.requireSession(a.handleTermsAccept))
 
 	mux.HandleFunc("GET /wallet", a.requireOnboarded(a.handleWalletShow))
